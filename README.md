@@ -1,38 +1,69 @@
-# sv
+# Sudoku Game
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern, responsive Sudoku game built with SvelteKit.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Multiple difficulty levels: Easy, Medium, Hard, Expert, Master, and Extreme
+- Timer to track your solving time
+- Pencil mode for taking notes
+- Highlighting of cells with the same value
+- Undo/Redo functionality
+- Mobile-responsive design
+- Keyboard navigation support
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or later)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
 ```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+git clone https://github.com/yourusername/sudoku.git
+cd sudoku
 ```
 
-## Developing
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
+3. Start the development server
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# or
+yarn dev
 ```
 
-## Building
+4. Open your browser and navigate to `http://localhost:5173`
 
-To create a production version of your app:
+## How to Play
 
-```bash
-npm run build
-```
+1. Select a difficulty level from the home screen
+2. Use the number pad to fill in cells
+3. Toggle between Pen mode (for final answers) and Pencil mode (for notes)
+4. Use the Check button to verify your solution
+5. Use Undo/Redo to correct mistakes
 
-You can preview the production build with `npm run preview`.
+## Keyboard Shortcuts
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- Arrow keys or h,j,k,l: Navigate between cells
+- 1-9: Enter a number
+- Backspace/Delete: Clear a cell
+- p: Toggle pencil mode
+
+## Technologies Used
+
+- SvelteKit
+- TypeScript
+- CSS Variables for theming
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
