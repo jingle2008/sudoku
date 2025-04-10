@@ -16,6 +16,36 @@ export type GameState = {
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
+// Helper function to check if a number can be placed in a cell
+function isValidNumberPlacement(grid: number[][], row: number, col: number, value: number): boolean {
+	// Check row
+	for (let c = 0; c < 9; c++) {
+		if (c !== col && grid[row][c] === value) {
+			return false;
+		}
+	}
+
+	// Check column
+	for (let r = 0; r < 9; r++) {
+		if (r !== row && grid[r][col] === value) {
+			return false;
+		}
+	}
+
+	// Check 3x3 box
+	const boxRow = Math.floor(row / 3) * 3;
+	const boxCol = Math.floor(col / 3) * 3;
+	for (let r = boxRow; r < boxRow + 3; r++) {
+		for (let c = boxCol; c < boxCol + 3; c++) {
+			if ((r !== row || c !== col) && grid[r][c] === value) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 // Create the initial grid
 function createInitialGrid(): Cell[][] {
 	return Array(9)
@@ -49,7 +79,8 @@ function createGameStore() {
 		startTime: null as number | null,
 		elapsedTime: 0,
 		timerInterval: null as number | null,
-		flashTimeout: null as number | null
+		flashTimeout: null as number | null,
+		isAuthoring: false
 	});
 
 	// Initialize the first cell as selected
@@ -58,6 +89,63 @@ function createGameStore() {
 		newState.grid[0][0].isSelected = true;
 		return newState;
 	});
+
+	// Helper function to check for conflicts and get conflicting cells
+	function findConflictingCells<T extends { value: number | null } | number>(
+		grid: T[][],
+		row: number,
+		col: number,
+		value: number
+	): { row: number; col: number }[] {
+		const conflictingCells: { row: number; col: number }[] = [];
+		
+		// Check row
+		for (let c = 0; c < 9; c++) {
+			if (c !== col) {
+				const cellValue = typeof grid[row][c] === 'number' 
+					? grid[row][c] as number 
+					: (grid[row][c] as { value: number | null }).value;
+				if (cellValue === value) {
+					conflictingCells.push({ row, col: c });
+				}
+			}
+		}
+
+		// Check column
+		for (let r = 0; r < 9; r++) {
+			if (r !== row) {
+				const cellValue = typeof grid[r][col] === 'number'
+					? grid[r][col] as number
+					: (grid[r][col] as { value: number | null }).value;
+				if (cellValue === value) {
+					conflictingCells.push({ row: r, col });
+				}
+			}
+		}
+
+		// Check 3x3 box
+		const boxRow = Math.floor(row / 3) * 3;
+		const boxCol = Math.floor(col / 3) * 3;
+		for (let r = boxRow; r < boxRow + 3; r++) {
+			for (let c = boxCol; c < boxCol + 3; c++) {
+				if (r !== row || c !== col) {
+					const cellValue = typeof grid[r][c] === 'number'
+						? grid[r][c] as number
+						: (grid[r][c] as { value: number | null }).value;
+					if (cellValue === value) {
+						conflictingCells.push({ row: r, col: c });
+					}
+				}
+			}
+		}
+
+		return conflictingCells;
+	}
+
+	// Helper function to check for conflicts
+	function hasConflict(grid: Cell[][], row: number, col: number, value: number): boolean {
+		return findConflictingCells(grid, row, col, value).length > 0;
+	}
 
 	// Helper function to flash conflicting cells
 	function flashConflictingCells(grid: Cell[][], row: number, col: number, value: number) {
@@ -70,32 +158,7 @@ function createGameStore() {
 		});
 		
 		// Find all conflicting cells
-		const conflictingCells: {row: number, col: number}[] = [];
-		
-		// Check row
-		for (let c = 0; c < 9; c++) {
-			if (c !== col && grid[row][c].value === value) {
-				conflictingCells.push({row, col: c});
-			}
-		}
-
-		// Check column
-		for (let r = 0; r < 9; r++) {
-			if (r !== row && grid[r][col].value === value) {
-				conflictingCells.push({row: r, col});
-			}
-		}
-
-		// Check 3x3 box
-		const boxRow = Math.floor(row / 3) * 3;
-		const boxCol = Math.floor(col / 3) * 3;
-		for (let r = boxRow; r < boxRow + 3; r++) {
-			for (let c = boxCol; c < boxCol + 3; c++) {
-				if (r !== row && c !== col && grid[r][c].value === value) {
-					conflictingCells.push({row: r, col: c});
-				}
-			}
-		}
+		const conflictingCells = findConflictingCells(grid, row, col, value);
 		
 		// If no conflicts, return early
 		if (conflictingCells.length === 0) {
@@ -568,15 +631,83 @@ function createGameStore() {
 			const minutes = Math.floor(seconds / 60);
 			const remainingSeconds = seconds % 60;
 			return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+		},
+
+		// Initialize an empty grid for editing
+		initializeEditingGrid: () => {
+			update((state) => {
+				const newState = { ...state };
+				newState.grid = createInitialGrid();
+				newState.isGameStarted = true;
+				newState.isAuthoring = true;
+				newState.startTime = Date.now();
+				newState.timerInterval = setInterval(() => {
+					update((state) => ({
+						...state,
+						elapsedTime: Math.floor((Date.now() - state.startTime!) / 1000)
+					}));
+				}, 1000);
+				return newState;
+			});
+		},
+
+		// Check if the edited puzzle has a unique solution
+		checkEditingSolution: () => {
+			let isUnique = false;
+			update((state) => {
+				// Convert the current grid to a format suitable for solution checking
+				const puzzle = state.grid.map(row => 
+					row.map(cell => cell.value)
+				);
+				isUnique = hasUniqueSolution(puzzle);
+				return state;
+			});
+			return isUnique;
+		},
+
+		// Start solving mode for the edited puzzle
+		startSolvingMode: () => {
+			update((state) => {
+				const newState = { ...state };
+				// Mark all cells with values as initial
+				for (let row = 0; row < 9; row++) {
+					for (let col = 0; col < 9; col++) {
+						if (newState.grid[row][col].value !== null) {
+							newState.grid[row][col].isInitial = true;
+						}
+					}
+				}
+				newState.isAuthoring = false;
+				return newState;
+			});
+		},
+
+		// Reset the game state
+		resetGame: () => {
+			update((state) => {
+				if (state.timerInterval !== null) {
+					clearInterval(state.timerInterval);
+				}
+				return {
+					...state,
+					grid: createInitialGrid(),
+					selectedCell: { row: 0, col: 0 },
+					isPencilMode: false,
+					isGameStarted: false,
+					isAuthoring: false,
+					undoStack: [],
+					redoStack: [],
+					difficulty: 'medium',
+					initialGrid: [],
+					isComplete: false,
+					startTime: null,
+					elapsedTime: 0,
+					timerInterval: null,
+					flashTimeout: null
+				};
+			});
 		}
 	};
-}
-
-// Helper function to check for conflicts
-function hasConflict(grid: Cell[][], row: number, col: number, value: number): boolean {
-	return checkRow(grid, row, col, value) || 
-		checkColumn(grid, row, col, value) || 
-		checkBox(grid, row, col, value);
 }
 
 // Generate a Sudoku puzzle of the specified difficulty
@@ -675,30 +806,6 @@ function hasUniqueSolution(puzzle: (number | null)[][]): boolean {
 	return solutionCount === 1;
 }
 
-// Check if a number can be placed in a cell
-function isValidNumberPlacement(grid: number[][], row: number, col: number, value: number): boolean {
-	// Check row
-	for (let c = 0; c < 9; c++) {
-		if (c !== col && grid[row][c] === value) return false;
-	}
-
-	// Check column
-	for (let r = 0; r < 9; r++) {
-		if (r !== row && grid[r][col] === value) return false;
-	}
-
-	// Check 3x3 box
-	const boxRow = Math.floor(row / 3) * 3;
-	const boxCol = Math.floor(col / 3) * 3;
-	for (let r = boxRow; r < boxRow + 3; r++) {
-		for (let c = boxCol; c < boxCol + 3; c++) {
-			if (r !== row && c !== col && grid[r][c] === value) return false;
-		}
-	}
-
-	return true;
-}
-
 // Generate a solved Sudoku grid
 function generateSolvedGrid(): number[][] {
 	// Start with an empty grid
@@ -760,65 +867,6 @@ function fillGrid(grid: number[][]): boolean {
 	}
 
 	// No solution found
-	return false;
-}
-
-// Helper function to check row for conflicts
-function checkRow<T extends { value: number | null } | number>(
-	grid: T[][],
-	row: number,
-	col: number,
-	value: number
-): boolean {
-	for (let c = 0; c < 9; c++) {
-		if (c !== col) {
-			const cellValue = typeof grid[row][c] === 'number' 
-				? grid[row][c] as number 
-				: (grid[row][c] as { value: number | null }).value;
-			if (cellValue === value) return true;
-		}
-	}
-	return false;
-}
-
-// Helper function to check column for conflicts
-function checkColumn<T extends { value: number | null } | number>(
-	grid: T[][],
-	row: number,
-	col: number,
-	value: number
-): boolean {
-	for (let r = 0; r < 9; r++) {
-		if (r !== row) {
-			const cellValue = typeof grid[r][col] === 'number'
-				? grid[r][col] as number
-				: (grid[r][col] as { value: number | null }).value;
-			if (cellValue === value) return true;
-		}
-	}
-	return false;
-}
-
-// Helper function to check 3x3 box for conflicts
-function checkBox<T extends { value: number | null } | number>(
-	grid: T[][],
-	row: number,
-	col: number,
-	value: number
-): boolean {
-	const boxRow = Math.floor(row / 3) * 3;
-	const boxCol = Math.floor(col / 3) * 3;
-	
-	for (let r = boxRow; r < boxRow + 3; r++) {
-		for (let c = boxCol; c < boxCol + 3; c++) {
-			if (r !== row || c !== col) {
-				const cellValue = typeof grid[r][c] === 'number'
-					? grid[r][c] as number
-					: (grid[r][c] as { value: number | null }).value;
-				if (cellValue === value) return true;
-			}
-		}
-	}
 	return false;
 }
 

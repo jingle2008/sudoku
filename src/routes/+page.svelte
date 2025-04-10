@@ -13,6 +13,10 @@
 			<span class="icon">🎮</span>
 			<span class="text">New Game</span>
 		</button>
+		<button class="new-game-button" on:click={() => goto('/puzzle/edit')}>
+			<span class="icon">✏️</span>
+			<span class="text">Edit Puzzle</span>
+		</button>
 	</div>
 </div>
 
@@ -46,6 +50,9 @@
 
 	.button-container {
 		margin-top: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 
 	.new-game-button {
@@ -94,5 +101,27 @@
 			font-size: 1.2rem;
 			padding: 0.8rem 1.6rem;
 		}
+	}
+
+	.button {
+		padding: 1rem 2rem;
+		font-size: 1.2rem;
+		font-weight: 500;
+		text-align: center;
+		text-decoration: none;
+		color: white;
+		background: var(--primary-color);
+		border-radius: 8px;
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.button:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.button:active {
+		transform: translateY(0);
+		box-shadow: none;
 	}
 </style>
