@@ -16,109 +16,77 @@ export type GameState = {
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
+enum Group {
+	Row = 'row',
+	Column = 'column',
+	Box = 'box'
+}
+
 function getBoxIndices(cellRow: number, cellCol: number): { boxRow: number, boxCol: number } {
-	const boxRow = Math.floor(cellRow / 3) * 3;
-	const boxCol = Math.floor(cellCol / 3) * 3;
-	return { boxRow, boxCol };
+	return {
+		boxRow: Math.floor(cellRow / 3) * 3,
+		boxCol: Math.floor(cellCol / 3) * 3
+	};
 }
 
 // Helper function to check if a number can be placed in a cell
 function isValidNumberPlacement(grid: number[][], row: number, col: number, value: number): boolean {
-	// Check row
-	for (let c = 0; c < 9; c++) {
-		if (c !== col && grid[row][c] === value) {
+	for (let i = 0; i < 9; i++) {
+		if ((i !== col && grid[row][i] === value) || (i !== row && grid[i][col] === value)) {
+			return false;
+		}
+		const { boxRow, boxCol } = getBoxIndices(row, col);
+		if (grid[boxRow + Math.floor(i / 3)][boxCol + (i % 3)] === value) {
 			return false;
 		}
 	}
-
-	// Check column
-	for (let r = 0; r < 9; r++) {
-		if (r !== row && grid[r][col] === value) {
-			return false;
-		}
-	}
-
-	// Check 3x3 box
-	const { boxRow, boxCol } = getBoxIndices(row, col);
-	for (let r = boxRow; r < boxRow + 3; r++) {
-		for (let c = boxCol; c < boxCol + 3; c++) {
-			if ((r !== row || c !== col) && grid[r][c] === value) {
-				return false;
-			}
-		}
-	}
-
 	return true;
 }
 
-function getCluesInRow(grid: Cell[][], row: number, col: number): Set<number> {
-	const notes = new Set<number>();
-	for (let c = 0; c < 9; c++) {
-		if (c === col) continue;
-
-		if (grid[row][c].value !== null) {
-			notes.add(grid[row][c].value!);
-		}
-		else {
-			grid[row][c].notes.forEach(note => notes.add(note));
-		}
-	}
-
-	return notes;
-}
-
-function getCluesInColumn(grid: Cell[][], row: number, col: number): Set<number> {
-	const notes = new Set<number>();
-	for (let r = 0; r < 9; r++) {
-		if (r === row) continue;
-
-		if (grid[r][col].value !== null) {
-			notes.add(grid[r][col].value!);
-		}
-		else {
-			grid[r][col].notes.forEach(note => notes.add(note));
-		}
-	}
-
-	return notes;
-}
-
-function getCluesInBox(grid: Cell[][], row: number, col: number): Set<number> {
+// Function to gather clues from a specific direction
+function getClues(grid: Cell[][], row: number, col: number, direction: Group): Set<number> {
 	const notes = new Set<number>();
 	const { boxRow, boxCol } = getBoxIndices(row, col);
 
-	for (let r = boxRow; r < boxRow + 3; r++) {
-		for (let c = boxCol; c < boxCol + 3; c++) {
+	for (let i = 0; i < 9; i++) {
+		let cell: Cell;
+		if (direction === Group.Row) {
+			if (i === col) continue;
+			cell = grid[row][i];
+		} else if (direction === Group.Column) {
+			if (i === row) continue;
+			cell = grid[i][col];
+		} else {
+			const r = boxRow + Math.floor(i / 3);
+			const c = boxCol + (i % 3);
 			if (r === row && c === col) continue;
+			cell = grid[r][c];
+		}
 
-			if (grid[r][c].value !== null) {
-				notes.add(grid[r][c].value!);
-			}
-			else {
-				grid[r][c].notes.forEach(note => notes.add(note));
-			}
+		if (cell.value !== null) {
+			notes.add(cell.value);
+		} else {
+			cell.notes.forEach(note => notes.add(note));
 		}
 	}
 
 	return notes;
 }
 
-function applyUniqueNotes(grid: Cell[][], row: number, col: number,
-	getClues: (grid: Cell[][], row: number, col: number) => Set<number>,
-	group: string): boolean {
+function applyUniqueNotes(grid: Cell[][], row: number, col: number, group: Group): boolean {
 	const cell = grid[row][col];
-	const clues = getClues(grid, row, col);
+	const clues = getClues(grid, row, col, group);
+	const uniqueNotes = [...cell.notes].filter(note => !clues.has(note));
 
-	const uniqueNotes = cell.notes.difference(clues);
-	if (uniqueNotes.size === 1) {
-		const note = uniqueNotes.values().next().value!;
+	if (uniqueNotes.length === 1) {
+		const note = uniqueNotes[0];
 		console.log(`Naked single found at (${row},${col}), value: ${note}, unique in ${group}.`);
 		cell.notes.clear();
 		cell.notes.add(note);
-		return true; // Indicate that a unique note was found
+		return true;
 	}
 
-	return false; // No unique note found
+	return false;
 }
 
 function processNakedSingle(grid: Cell[][], row: number, col: number): boolean {
@@ -131,11 +99,7 @@ function processNakedSingle(grid: Cell[][], row: number, col: number): boolean {
 		return true; // Indicate that a naked single was found
 	}
 
-	if (applyUniqueNotes(grid, row, col, getCluesInRow, 'row')) return true;
-	if (applyUniqueNotes(grid, row, col, getCluesInColumn, 'column')) return true;
-	if (applyUniqueNotes(grid, row, col, getCluesInBox, 'box')) return true;
-
-	return false; // No action taken
+	return applyUniqueNotes(grid, row, col, Group.Row) || applyUniqueNotes(grid, row, col, Group.Column) || applyUniqueNotes(grid, row, col, Group.Box);
 }
 
 function applyNakedSingles(grid: Cell[][]) {
@@ -274,30 +238,27 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): boolean {
 	if (cell.value !== null || cell.notes.size !== 2) return false;
 
 	let pairFound = false;
+
 	const pairCol = getNakedPairInRow(grid, row, col);
 	if (pairCol !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at row (${row}), columns (${col},${pairCol}), values: ${[...cell.notes]}.`);
 		removeNotesInRow(grid, row, [col, pairCol], cell.notes);
-
 		if (areCellsInSameBox([{ row, col }, { row, col: pairCol }])) {
 			removeNotesInBox(grid, { row, col }, [row * 9 + col, row * 9 + pairCol], cell.notes);
 		}
 	}
 
-	// Now do the same for the column
 	const pairRow = getNakedPairInColumn(grid, row, col);
 	if (pairRow !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at column (${col}), rows (${row},${pairRow}), values: ${[...cell.notes]}.`);
 		removeNotesInColumn(grid, col, [row, pairRow], cell.notes);
-
 		if (areCellsInSameBox([{ row, col }, { row: pairRow, col }])) {
 			removeNotesInBox(grid, { row, col }, [row * 9 + col, pairRow * 9 + col], cell.notes);
 		}
 	}
 
-	// Now do the same for the box
 	const pairBox = getNakedPairInBox(grid, row, col);
 	if (pairBox !== null) {
 		pairFound = true;
