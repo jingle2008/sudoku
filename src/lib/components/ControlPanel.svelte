@@ -58,8 +58,6 @@
 			>
 				Redo
 			</button>
-		</div>
-		<div class="action-row">
 			<button
 				class="delete"
 				on:click={() => gameStore.setCellValue(null)}
@@ -69,6 +67,8 @@
 			>
 				Delete
 			</button>
+		</div>
+		<div class="action-row">
 			<button
 				class="check"
 				on:click={() => gameStore.checkSolution()}
@@ -78,17 +78,6 @@
 			>
 				Check
 			</button>
-		</div>
-		<div class="action-row">
-			<button
-				class="auto-notes"
-				on:click={() => gameStore.autoNotes()}
-				disabled={!$isGameStarted}
-				title="Auto Notes"
-				aria-label="Automatically populate notes for empty cells"
-			>
-				Auto Notes
-			</button>
 			<button
 				class="restart"
 				on:click={() => gameStore.restartGame()}
@@ -96,6 +85,35 @@
 				aria-label="Restart the game"
 			>
 				Restart
+			</button>
+		</div>
+		<div class="action-row">
+			<button
+				class="auto-notes"
+				on:click={() => gameStore.applyAutoNotes()}
+				disabled={!$isGameStarted}
+				title="Auto Notes"
+				aria-label="Automatically populate notes for empty cells"
+			>
+				Auto Notes
+			</button>
+			<button
+				class="naked-singles"
+				on:click={() => gameStore.applyNakedSingles()}
+				disabled={!$isGameStarted}
+				title="Naked Singles"
+				aria-label="Automatically cells containing only one possible value"
+			>
+				Naked Singles
+			</button>
+			<button
+				class="naked-pairs"
+				on:click={() => gameStore.applyNakedPairs()}
+				disabled={!$isGameStarted}
+				title="Naked Pairs"
+				aria-label="Automatically cells containing only two possible values"
+			>
+				Naked Pairs
 			</button>
 		</div>
 	</div>
@@ -287,8 +305,10 @@
 		box-shadow: none;
 	}
 
-	.auto-notes {
-		background: #6c757d;
+	.auto-notes,
+	.naked-singles,
+	.naked-pairs {
+		background: #62a7e4;
 	}
 
 	.completion-message {

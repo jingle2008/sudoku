@@ -16,6 +16,12 @@ export type GameState = {
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
+function getBoxIndices(cellRow: number, cellCol: number): { boxRow: number, boxCol: number } {
+	const boxRow = Math.floor(cellRow / 3) * 3;
+	const boxCol = Math.floor(cellCol / 3) * 3;
+	return { boxRow, boxCol };
+}
+
 // Helper function to check if a number can be placed in a cell
 function isValidNumberPlacement(grid: number[][], row: number, col: number, value: number): boolean {
 	// Check row
@@ -33,8 +39,7 @@ function isValidNumberPlacement(grid: number[][], row: number, col: number, valu
 	}
 
 	// Check 3x3 box
-	const boxRow = Math.floor(row / 3) * 3;
-	const boxCol = Math.floor(col / 3) * 3;
+	const { boxRow, boxCol } = getBoxIndices(row, col);
 	for (let r = boxRow; r < boxRow + 3; r++) {
 		for (let c = boxCol; c < boxCol + 3; c++) {
 			if ((r !== row || c !== col) && grid[r][c] === value) {
@@ -44,6 +49,275 @@ function isValidNumberPlacement(grid: number[][], row: number, col: number, valu
 	}
 
 	return true;
+}
+
+function getCluesInRow(grid: Cell[][], row: number, col: number): Set<number> {
+	const notes = new Set<number>();
+	for (let c = 0; c < 9; c++) {
+		if (c === col) continue;
+
+		if (grid[row][c].value !== null) {
+			notes.add(grid[row][c].value!);
+		}
+		else {
+			grid[row][c].notes.forEach(note => notes.add(note));
+		}
+	}
+
+	return notes;
+}
+
+function getCluesInColumn(grid: Cell[][], row: number, col: number): Set<number> {
+	const notes = new Set<number>();
+	for (let r = 0; r < 9; r++) {
+		if (r === row) continue;
+
+		if (grid[r][col].value !== null) {
+			notes.add(grid[r][col].value!);
+		}
+		else {
+			grid[r][col].notes.forEach(note => notes.add(note));
+		}
+	}
+
+	return notes;
+}
+
+function getCluesInBox(grid: Cell[][], row: number, col: number): Set<number> {
+	const notes = new Set<number>();
+	const { boxRow, boxCol } = getBoxIndices(row, col);
+
+	for (let r = boxRow; r < boxRow + 3; r++) {
+		for (let c = boxCol; c < boxCol + 3; c++) {
+			if (r === row && c === col) continue;
+
+			if (grid[r][c].value !== null) {
+				notes.add(grid[r][c].value!);
+			}
+			else {
+				grid[r][c].notes.forEach(note => notes.add(note));
+			}
+		}
+	}
+
+	return notes;
+}
+
+function applyUniqueNotes(grid: Cell[][], row: number, col: number,
+	getClues: (grid: Cell[][], row: number, col: number) => Set<number>,
+	group: string): boolean {
+	const cell = grid[row][col];
+	const clues = getClues(grid, row, col);
+
+	const uniqueNotes = cell.notes.difference(clues);
+	if (uniqueNotes.size === 1) {
+		const note = uniqueNotes.values().next().value!;
+		console.log(`Naked single found at (${row},${col}), value: ${note}, unique in ${group}.`);
+		cell.notes.clear();
+		cell.notes.add(note);
+		return true; // Indicate that a unique note was found
+	}
+
+	return false; // No unique note found
+}
+
+function processNakedSingle(grid: Cell[][], row: number, col: number): boolean {
+	const cell = grid[row][col];
+	if (cell.value !== null) return false;
+
+	if (cell.notes.size === 1) {
+		const note = cell.notes.values().next().value;
+		console.log(`Naked single found at (${row},${col}), value: ${note}, only note in cell.`);
+		return true; // Indicate that a naked single was found
+	}
+
+	if (applyUniqueNotes(grid, row, col, getCluesInRow, 'row')) return true;
+	if (applyUniqueNotes(grid, row, col, getCluesInColumn, 'column')) return true;
+	if (applyUniqueNotes(grid, row, col, getCluesInBox, 'box')) return true;
+
+	return false; // No action taken
+}
+
+function applyNakedSingles(grid: Cell[][]) {
+	let nakedSingles = 0;
+	for (let row = 0; row < 9; row++) {
+		for (let col = 0; col < 9; col++) {
+			if (processNakedSingle(grid, row, col)) {
+				nakedSingles++;
+			}
+		}
+	}
+	console.log(`${nakedSingles} naked singles applied.`);
+}
+
+function getNakedPairInRow(grid: Cell[][], row: number, col: number): number | null {
+	for (let c = col + 1; c < 9; c++) {
+		if (grid[row][c].notes.size !== 2) continue;
+		if (grid[row][c].notes.difference(grid[row][col].notes).size === 0) {
+			return c;
+		}
+	}
+	return null;
+}
+
+function getNakedPairInColumn(grid: Cell[][], row: number, col: number): number | null {
+	for (let r = row + 1; r < 9; r++) {
+		if (grid[r][col].notes.size !== 2) continue;
+		if (grid[r][col].notes.difference(grid[row][col].notes).size === 0) {
+			return r;
+		}
+	}
+	return null;
+}
+
+function getNakedPairInBox(grid: Cell[][], row: number, col: number): { row: number, col: number } | null {
+	const { boxRow, boxCol } = getBoxIndices(row, col);
+	for (let r = row + 1; r < boxRow + 3; r++) {
+		for (let c = col + 1; c < boxCol + 3; c++) {
+			if (grid[r][c].notes.size !== 2) continue;
+			if (grid[r][c].notes.difference(grid[row][col].notes).size === 0) {
+				return { row: r, col: c };
+			}
+		}
+	}
+	return null;
+}
+
+// given a set of cells, return if they are in the same box
+function areCellsInSameBox(cells: { row: number, col: number }[]) {
+	if (cells.length < 2) return true;
+
+	const { boxRow, boxCol } = getBoxIndices(cells[0].row, cells[0].col);
+	for (const cell of cells) {
+		const box = getBoxIndices(cell.row, cell.col);
+		if (box.boxRow !== boxRow || box.boxCol !== boxCol) {
+			return false;
+		}
+	}
+	return true;
+}
+
+function removeNotesInCell(grid: Cell[][], row: number, col: number, notes: Set<number>) {
+	let notesRemoved = 0;
+	const beforeNotes = [...grid[row][col].notes];
+
+	notes.forEach(function (note) {
+		if (grid[row][col].notes.delete(note)) {
+			notesRemoved++;
+		}
+	});
+
+	if (notesRemoved > 0) {
+		console.log(`${notesRemoved} notes from cell (${row},${col}) removed, before: ${beforeNotes}, after: ${[...grid[row][col].notes]}`);
+	}
+
+	return notesRemoved;
+}
+
+// given a grid, a row and columns, return notes from all cells in the row except the columns
+function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes: Set<number>) {
+	console.log(`Removing notes ${[...notes]} from row (${row}).`);
+
+	let totalNotesRemoved = 0;
+	let cellsModified = 0;
+	for (let c = 0; c < 9; c++) {
+		if (columns.includes(c) || grid[row][c].value !== null) continue;
+
+		const notesRemoved = removeNotesInCell(grid, row, c, notes);
+		totalNotesRemoved += notesRemoved;
+		cellsModified += notesRemoved > 0 ? 1 : 0;
+	}
+
+	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in row (${row}).`);
+}
+
+// now do the same for the column and rows
+function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes: Set<number>) {
+	console.log(`Removing notes ${[...notes]} from column (${col}).`);
+
+	let totalNotesRemoved = 0;
+	let cellsModified = 0;
+	for (let r = 0; r < 9; r++) {
+		if (rows.includes(r) || grid[r][col].value !== null) continue;
+
+		const notesRemoved = removeNotesInCell(grid, r, col, notes);
+		totalNotesRemoved += notesRemoved;
+		cellsModified += notesRemoved > 0 ? 1 : 0;
+	}
+
+	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in column (${col}).`);
+}
+
+function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number },
+	cells: number[], notes: Set<number>) {
+	const { boxRow, boxCol } = getBoxIndices(cellInBox.row, cellInBox.col);
+
+	console.log(`Removing notes ${[...notes]} from box (${boxRow},${boxCol}).`);
+
+	let totalNotesRemoved = 0;
+	let cellsModified = 0;
+	for (let r = boxRow; r < boxRow + 3; r++) {
+		for (let c = boxCol; c < boxCol + 3; c++) {
+			if (cells.includes(r * 9 + c) || grid[r][c].value !== null) continue;
+
+			const notesRemoved = removeNotesInCell(grid, r, c, notes);
+			totalNotesRemoved += notesRemoved;
+			cellsModified += notesRemoved > 0 ? 1 : 0;
+		}
+	}
+
+	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in box (${boxRow},${boxCol}).`);
+}
+
+function processNakedPairs(grid: Cell[][], row: number, col: number): boolean {
+	const cell = grid[row][col];
+	if (cell.value !== null || cell.notes.size !== 2) return false;
+
+	let pairFound = false;
+	const pairCol = getNakedPairInRow(grid, row, col);
+	if (pairCol !== null) {
+		pairFound = true;
+		console.log(`Naked pair found at row (${row}), columns (${col},${pairCol}), values: ${[...cell.notes]}.`);
+		removeNotesInRow(grid, row, [col, pairCol], cell.notes);
+
+		if (areCellsInSameBox([{ row, col }, { row, col: pairCol }])) {
+			removeNotesInBox(grid, { row, col }, [row * 9 + col, row * 9 + pairCol], cell.notes);
+		}
+	}
+
+	// Now do the same for the column
+	const pairRow = getNakedPairInColumn(grid, row, col);
+	if (pairRow !== null) {
+		pairFound = true;
+		console.log(`Naked pair found at column (${col}), rows (${row},${pairRow}), values: ${[...cell.notes]}.`);
+		removeNotesInColumn(grid, col, [row, pairRow], cell.notes);
+
+		if (areCellsInSameBox([{ row, col }, { row: pairRow, col }])) {
+			removeNotesInBox(grid, { row, col }, [row * 9 + col, pairRow * 9 + col], cell.notes);
+		}
+	}
+
+	// Now do the same for the box
+	const pairBox = getNakedPairInBox(grid, row, col);
+	if (pairBox !== null) {
+		pairFound = true;
+		console.log(`Naked pair found at (${row},${col}) and (${pairBox.row},${pairBox.col}), values: ${[...cell.notes]}.`);
+		removeNotesInBox(grid, pairBox, [row * 9 + col, pairBox.row * 9 + pairBox.col], cell.notes);
+	}
+
+	return pairFound;
+}
+
+function applyNakedPairs(grid: Cell[][]) {
+	let nakedPairs = 0;
+	for (let row = 0; row < 9; row++) {
+		for (let col = 0; col < 9; col++) {
+			if (processNakedPairs(grid, row, col)) {
+				nakedPairs++;
+			}
+		}
+	}
+	console.log(`${nakedPairs} naked pairs applied.`);
 }
 
 // Create the initial grid
@@ -98,12 +372,12 @@ function createGameStore() {
 		value: number
 	): { row: number; col: number }[] {
 		const conflictingCells: { row: number; col: number }[] = [];
-		
+
 		// Check row
 		for (let c = 0; c < 9; c++) {
 			if (c !== col) {
-				const cellValue = typeof grid[row][c] === 'number' 
-					? grid[row][c] as number 
+				const cellValue = typeof grid[row][c] === 'number'
+					? grid[row][c] as number
 					: (grid[row][c] as { value: number | null }).value;
 				if (cellValue === value) {
 					conflictingCells.push({ row, col: c });
@@ -124,8 +398,7 @@ function createGameStore() {
 		}
 
 		// Check 3x3 box
-		const boxRow = Math.floor(row / 3) * 3;
-		const boxCol = Math.floor(col / 3) * 3;
+		const { boxRow, boxCol } = getBoxIndices(row, col);
 		for (let r = boxRow; r < boxRow + 3; r++) {
 			for (let c = boxCol; c < boxCol + 3; c++) {
 				if (r !== row || c !== col) {
@@ -156,36 +429,36 @@ function createGameStore() {
 			}
 			return state;
 		});
-		
+
 		// Find all conflicting cells
 		const conflictingCells = findConflictingCells(grid, row, col, value);
-		
+
 		// If no conflicts, return early
 		if (conflictingCells.length === 0) {
 			return;
 		}
-		
+
 		// Flash the conflicting cells
 		update(state => {
-			const newState = {...state};
-			conflictingCells.forEach(({row, col}) => {
+			const newState = { ...state };
+			conflictingCells.forEach(({ row, col }) => {
 				newState.grid[row][col].isFlashing = true;
 			});
 			return newState;
 		});
-		
+
 		// Set a timeout to remove the flashing after 1 second
 		const flashTimeout = setTimeout(() => {
 			update(state => {
-				const newState = {...state};
-				conflictingCells.forEach(({row, col}) => {
+				const newState = { ...state };
+				conflictingCells.forEach(({ row, col }) => {
 					newState.grid[row][col].isFlashing = false;
 				});
 				newState.flashTimeout = null;
 				return newState;
 			});
 		}, 1000);
-		
+
 		// Store the timeout ID
 		update(state => ({
 			...state,
@@ -232,11 +505,11 @@ function createGameStore() {
 					elapsedTime: 0,
 					timerInterval
 				};
-				
+
 				// Find the first empty cell
 				let firstEmptyCell = { row: 0, col: 0 };
 				let found = false;
-				
+
 				for (let r = 0; r < 9 && !found; r++) {
 					for (let c = 0; c < 9 && !found; c++) {
 						if (newState.grid[r][c].value === null) {
@@ -245,11 +518,11 @@ function createGameStore() {
 						}
 					}
 				}
-				
+
 				// Select the first empty cell
 				newState.selectedCell = firstEmptyCell;
 				newState.grid[firstEmptyCell.row][firstEmptyCell.col].isSelected = true;
-				
+
 				return newState;
 			});
 		},
@@ -265,10 +538,10 @@ function createGameStore() {
 			// Restore the initial values from the initialGrid
 			update((state) => {
 				const newState = { ...state };
-				
+
 				// Create a new grid
 				newState.grid = createInitialGrid();
-				
+
 				// Restore initial values
 				for (let row = 0; row < 9; row++) {
 					for (let col = 0; col < 9; col++) {
@@ -278,7 +551,7 @@ function createGameStore() {
 						}
 					}
 				}
-				
+
 				// Reset timer
 				const startTime = Date.now();
 				const timerInterval = setInterval(() => {
@@ -287,11 +560,11 @@ function createGameStore() {
 						elapsedTime: Math.floor((Date.now() - startTime) / 1000)
 					}));
 				}, 1000);
-				
+
 				// Find the first empty cell
 				let firstEmptyCell = { row: 0, col: 0 };
 				let found = false;
-				
+
 				for (let r = 0; r < 9 && !found; r++) {
 					for (let c = 0; c < 9 && !found; c++) {
 						if (newState.grid[r][c].value === null) {
@@ -300,11 +573,11 @@ function createGameStore() {
 						}
 					}
 				}
-				
+
 				// Select the first empty cell
 				newState.selectedCell = firstEmptyCell;
 				newState.grid[firstEmptyCell.row][firstEmptyCell.col].isSelected = true;
-				
+
 				// Reset other state properties
 				newState.undoStack = [];
 				newState.redoStack = [];
@@ -312,7 +585,7 @@ function createGameStore() {
 				newState.startTime = startTime;
 				newState.elapsedTime = 0;
 				newState.timerInterval = timerInterval;
-				
+
 				return newState;
 			});
 		},
@@ -334,24 +607,24 @@ function createGameStore() {
 				if (state.selectedCell.row === row && state.selectedCell.col === col) {
 					return state;
 				}
-				
+
 				// Create a new state object for modifications
 				const newState = { ...state };
-				
+
 				// Deselect previous cell
 				newState.grid[state.selectedCell.row][state.selectedCell.col].isSelected = false;
-				
+
 				// Clear all highlights
 				for (let r = 0; r < 9; r++) {
 					for (let c = 0; c < 9; c++) {
 						newState.grid[r][c].isHighlighted = false;
 					}
 				}
-				
+
 				// Select new cell
 				newState.selectedCell = { row, col };
 				newState.grid[row][col].isSelected = true;
-				
+
 				// Highlight cells with the same value
 				const selectedValue = newState.grid[row][col].value;
 				if (selectedValue !== null) {
@@ -363,27 +636,8 @@ function createGameStore() {
 						}
 					}
 				}
-				
-				return newState;
-			}),
 
-		// Game actions
-		saveState: () =>
-			update((state) => {
-				const currentState: GameState = {
-					grid: state.grid.map((row) =>
-						row.map((cell) => ({
-							...cell,
-							notes: new Set(cell.notes)
-						}))
-					),
-					selectedCell: { ...state.selectedCell }
-				};
-				return {
-					...state,
-					undoStack: [...state.undoStack, currentState],
-					redoStack: [] // Clear redo stack when new action is performed
-				};
+				return newState;
 			}),
 
 		undo: () =>
@@ -452,7 +706,7 @@ function createGameStore() {
 		setCellValue: (value: number | null) =>
 			update((state) => {
 				const { row, col } = state.selectedCell;
-				
+
 				// Don't allow updating initialized cells
 				if (state.grid[row][col].isInitial) {
 					return state;
@@ -471,7 +725,7 @@ function createGameStore() {
 
 				// Create a new state object for modifications
 				const newState = { ...state };
-				
+
 				// Handle pencil mode
 				if (state.isPencilMode) {
 					if (value !== null) {
@@ -482,7 +736,7 @@ function createGameStore() {
 							flashConflictingCells(newState.grid, row, col, value);
 							return state; // Return original state without changes
 						}
-						
+
 						// Toggle the note
 						if (newState.grid[row][col].notes.has(value)) {
 							newState.grid[row][col].notes.delete(value);
@@ -493,7 +747,7 @@ function createGameStore() {
 						// Clear all notes
 						newState.grid[row][col].notes.clear();
 					}
-				} 
+				}
 				// Handle pen mode
 				else {
 					if (value !== null) {
@@ -504,7 +758,7 @@ function createGameStore() {
 							flashConflictingCells(newState.grid, row, col, value);
 							return state; // Return original state without changes
 						}
-						
+
 						// Set the value and clear notes
 						newState.grid[row][col].value = value;
 						newState.grid[row][col].notes.clear();
@@ -524,8 +778,7 @@ function createGameStore() {
 						}
 
 						// Remove this value from notes in the same 3x3 box
-						const boxRow = Math.floor(row / 3) * 3;
-						const boxCol = Math.floor(col / 3) * 3;
+						const { boxRow, boxCol } = getBoxIndices(row, col);
 						for (let r = boxRow; r < boxRow + 3; r++) {
 							for (let c = boxCol; c < boxCol + 3; c++) {
 								if (r !== row || c !== col) {
@@ -576,14 +829,14 @@ function createGameStore() {
 
 				// Create a new state object for modifications
 				const newState = { ...state };
-				
+
 				// Deselect previous cell
 				newState.grid[state.selectedCell.row][state.selectedCell.col].isSelected = false;
-				
+
 				// Select new cell
 				newState.selectedCell = { row: newRow, col: newCol };
 				newState.grid[newRow][newCol].isSelected = true;
-				
+
 				return newState;
 			}),
 
@@ -593,17 +846,17 @@ function createGameStore() {
 				const newState = checkSolution(state);
 				return {
 					...state,
-					isComplete: newState.grid.every((row) => 
+					isComplete: newState.grid.every((row) =>
 						row.every((cell) => cell.value !== null && !cell.isFlashing)
 					),
 				};
 			}),
 
 		// Auto-populate notes for empty cells
-		autoNotes: () =>
+		applyAutoNotes: () =>
 			update((state) => {
 				const newState = { ...state };
-				
+
 				// For each empty cell
 				for (let row = 0; row < 9; row++) {
 					for (let col = 0; col < 9; col++) {
@@ -611,7 +864,7 @@ function createGameStore() {
 						if (cell.value === null) {
 							// Clear existing notes
 							cell.notes.clear();
-							
+
 							// Check each possible number (1-9)
 							for (let num = 1; num <= 9; num++) {
 								// Check if number can be placed in this cell
@@ -622,7 +875,21 @@ function createGameStore() {
 						}
 					}
 				}
-				
+
+				return newState;
+			}),
+
+		applyNakedSingles: () =>
+			update((state) => {
+				const newState = { ...state };
+				applyNakedSingles(newState.grid);
+				return newState;
+			}),
+
+		applyNakedPairs: () =>
+			update((state) => {
+				const newState = { ...state };
+				applyNakedPairs(newState.grid);
 				return newState;
 			}),
 
@@ -656,7 +923,7 @@ function createGameStore() {
 			let isUnique = false;
 			update((state) => {
 				// Convert the current grid to a format suitable for solution checking
-				const puzzle = state.grid.map(row => 
+				const puzzle = state.grid.map(row =>
 					row.map(cell => cell.value)
 				);
 				isUnique = hasUniqueSolution(puzzle);
@@ -710,8 +977,27 @@ function createGameStore() {
 	};
 }
 
+// given a 81 digit string, return a 9x9 grid
+function stringToGrid(str: string): (number | null)[][] {
+	const grid = Array(9)
+		.fill(null)
+		.map(() => Array(9).fill(null));
+
+	for (let i = 0; i < 81; i++) {
+		if (str[i] === '0') {
+			continue;
+		}
+
+		const row = Math.floor(i / 9);
+		const col = i % 9;
+		grid[row][col] = parseInt(str[i]);
+	}
+	return grid;
+}
+
 // Generate a Sudoku puzzle of the specified difficulty
 function generateSudokuPuzzle(difficulty: Difficulty): (number | null)[][] {
+
 	// Start with a solved Sudoku grid
 	const solvedGrid = generateSolvedGrid();
 
@@ -749,33 +1035,43 @@ function generateSudokuPuzzle(difficulty: Difficulty): (number | null)[][] {
 		}
 	}
 
-	// Shuffle the positions
-	for (let i = positions.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[positions[i], positions[j]] = [positions[j], positions[i]];
-	}
-
 	// Try removing cells one by one
 	let removedCells = 0;
 	let attempts = 0;
-	const maxAttempts = 1000; // Prevent infinite loops
+	let currentPosition = positions.length;
+	const maxAttempts = 10000; // Prevent infinite loops
 
 	while (removedCells < cellsToRemove && attempts < maxAttempts) {
-		const { row, col } = positions[removedCells];
-		const tempValue = puzzle[row][col];
-		puzzle[row][col] = null;
-
-		// Check if the puzzle still has a unique solution
-		if (hasUniqueSolution(puzzle)) {
-			removedCells++;
-		} else {
-			// If not unique, restore the value and try next position
-			puzzle[row][col] = tempValue;
+		// Reshuffle when reaching end of positions
+		if (currentPosition >= positions.length) {
+			currentPosition = 0;
+			// Fisher-Yates reshuffle
+			for (let i = positions.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[positions[i], positions[j]] = [positions[j], positions[i]];
+			}
 		}
-		attempts++;
+
+		const { row, col } = positions[currentPosition];
+
+		// Only attempt removal if cell still contains value
+		if (puzzle[row][col] !== null) {
+			const tempValue = puzzle[row][col];
+			puzzle[row][col] = null;
+
+			if (hasUniqueSolution(puzzle)) {
+				removedCells++;
+			} else {
+				puzzle[row][col] = tempValue;
+			}
+			attempts++;
+		}
+
+		currentPosition++;
 	}
 
-	return puzzle;
+	const str = "800000001020000070050813020210905087009070300400000002000306000700000009060080050";
+	return stringToGrid(str);
 }
 
 // Check if a puzzle has a unique solution
