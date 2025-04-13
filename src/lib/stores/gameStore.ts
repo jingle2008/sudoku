@@ -22,21 +22,52 @@ enum Group {
 	Box = 'box'
 }
 
-function getBoxIndices(cellRow: number, cellCol: number): { boxRow: number, boxCol: number } {
+const BOX_SIZE = 3;
+const GRID_SIZE = BOX_SIZE * BOX_SIZE;
+const BOARD_SIZE = GRID_SIZE * GRID_SIZE;
+
+function getBoxOrigin(cellRow: number, cellCol: number): { row: number, col: number } {
 	return {
-		boxRow: Math.floor(cellRow / 3) * 3,
-		boxCol: Math.floor(cellCol / 3) * 3
+		row: Math.floor(cellRow / BOX_SIZE) * BOX_SIZE,
+		col: Math.floor(cellCol / BOX_SIZE) * BOX_SIZE
+	};
+}
+
+function toGridIndex(row: number, col: number): number {
+	return row * GRID_SIZE + col;
+}
+
+function fromGridIndex(index: number): { row: number, col: number } {
+	return {
+		row: Math.floor(index / GRID_SIZE),
+		col: index % GRID_SIZE
+	};
+}
+
+function fromBoxIndex(index: number): { row: number, col: number } {
+	return {
+		row: Math.floor(index / BOX_SIZE),
+		col: index % BOX_SIZE
+	};
+}
+
+function getCellInBox(box: { row: number, col: number }, index: number): { row: number, col: number } {
+	const { row: rowOffset, col: colOffset } = fromBoxIndex(index);
+	return {
+		row: box.row + rowOffset,
+		col: box.col + colOffset
 	};
 }
 
 // Helper function to check if a number can be placed in a cell
 function isValidNumberPlacement(grid: number[][], row: number, col: number, value: number): boolean {
-	for (let i = 0; i < 9; i++) {
+	const box = getBoxOrigin(row, col);
+	for (let i = 0; i < GRID_SIZE; i++) {
 		if ((i !== col && grid[row][i] === value) || (i !== row && grid[i][col] === value)) {
 			return false;
 		}
-		const { boxRow, boxCol } = getBoxIndices(row, col);
-		if (grid[boxRow + Math.floor(i / 3)][boxCol + (i % 3)] === value) {
+		const cell = getCellInBox(box, i);
+		if (grid[cell.row][cell.col] === value) {
 			return false;
 		}
 	}
@@ -46,9 +77,9 @@ function isValidNumberPlacement(grid: number[][], row: number, col: number, valu
 // Function to gather clues from a specific direction
 function getClues(grid: Cell[][], row: number, col: number, direction: Group): Set<number> {
 	const notes = new Set<number>();
-	const { boxRow, boxCol } = getBoxIndices(row, col);
+	const box = getBoxOrigin(row, col);
 
-	for (let i = 0; i < 9; i++) {
+	for (let i = 0; i < GRID_SIZE; i++) {
 		let cell: Cell;
 		if (direction === Group.Row) {
 			if (i === col) continue;
@@ -57,10 +88,9 @@ function getClues(grid: Cell[][], row: number, col: number, direction: Group): S
 			if (i === row) continue;
 			cell = grid[i][col];
 		} else {
-			const r = boxRow + Math.floor(i / 3);
-			const c = boxCol + (i % 3);
-			if (r === row && c === col) continue;
-			cell = grid[r][c];
+			const c = getCellInBox(box, i);
+			if (c.row === row && c.col === col) continue;
+			cell = grid[c.row][c.col];
 		}
 
 		if (cell.value !== null) {
@@ -104,8 +134,8 @@ function processNakedSingle(grid: Cell[][], row: number, col: number): boolean {
 
 function applyNakedSingles(grid: Cell[][]) {
 	let nakedSingles = 0;
-	for (let row = 0; row < 9; row++) {
-		for (let col = 0; col < 9; col++) {
+	for (let row = 0; row < GRID_SIZE; row++) {
+		for (let col = 0; col < GRID_SIZE; col++) {
 			if (processNakedSingle(grid, row, col)) {
 				nakedSingles++;
 			}
@@ -115,7 +145,7 @@ function applyNakedSingles(grid: Cell[][]) {
 }
 
 function getNakedPairInRow(grid: Cell[][], row: number, col: number): number | null {
-	for (let c = col + 1; c < 9; c++) {
+	for (let c = col + 1; c < GRID_SIZE; c++) {
 		if (grid[row][c].notes.size !== 2) continue;
 		if (grid[row][c].notes.difference(grid[row][col].notes).size === 0) {
 			return c;
@@ -125,7 +155,7 @@ function getNakedPairInRow(grid: Cell[][], row: number, col: number): number | n
 }
 
 function getNakedPairInColumn(grid: Cell[][], row: number, col: number): number | null {
-	for (let r = row + 1; r < 9; r++) {
+	for (let r = row + 1; r < GRID_SIZE; r++) {
 		if (grid[r][col].notes.size !== 2) continue;
 		if (grid[r][col].notes.difference(grid[row][col].notes).size === 0) {
 			return r;
@@ -135,9 +165,9 @@ function getNakedPairInColumn(grid: Cell[][], row: number, col: number): number 
 }
 
 function getNakedPairInBox(grid: Cell[][], row: number, col: number): { row: number, col: number } | null {
-	const { boxRow, boxCol } = getBoxIndices(row, col);
-	for (let r = row + 1; r < boxRow + 3; r++) {
-		for (let c = col + 1; c < boxCol + 3; c++) {
+	const { row: boxRow, col: boxCol } = getBoxOrigin(row, col);
+	for (let r = row + 1; r < boxRow + BOX_SIZE; r++) {
+		for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
 			if (grid[r][c].notes.size !== 2) continue;
 			if (grid[r][c].notes.difference(grid[row][col].notes).size === 0) {
 				return { row: r, col: c };
@@ -151,10 +181,10 @@ function getNakedPairInBox(grid: Cell[][], row: number, col: number): { row: num
 function areCellsInSameBox(cells: { row: number, col: number }[]) {
 	if (cells.length < 2) return true;
 
-	const { boxRow, boxCol } = getBoxIndices(cells[0].row, cells[0].col);
+	const { row: boxRow, col: boxCol } = getBoxOrigin(cells[0].row, cells[0].col);
 	for (const cell of cells) {
-		const box = getBoxIndices(cell.row, cell.col);
-		if (box.boxRow !== boxRow || box.boxCol !== boxCol) {
+		const box = getBoxOrigin(cell.row, cell.col);
+		if (box.row !== boxRow || box.col !== boxCol) {
 			return false;
 		}
 	}
@@ -184,7 +214,7 @@ function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes:
 
 	let totalNotesRemoved = 0;
 	let cellsModified = 0;
-	for (let c = 0; c < 9; c++) {
+	for (let c = 0; c < GRID_SIZE; c++) {
 		if (columns.includes(c) || grid[row][c].value !== null) continue;
 
 		const notesRemoved = removeNotesInCell(grid, row, c, notes);
@@ -202,7 +232,7 @@ function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes:
 
 	let totalNotesRemoved = 0;
 	let cellsModified = 0;
-	for (let r = 0; r < 9; r++) {
+	for (let r = 0; r < GRID_SIZE; r++) {
 		if (rows.includes(r) || grid[r][col].value !== null) continue;
 
 		const notesRemoved = removeNotesInCell(grid, r, col, notes);
@@ -216,15 +246,15 @@ function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes:
 
 function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number },
 	cells: number[], notes: Set<number>): number {
-	const { boxRow, boxCol } = getBoxIndices(cellInBox.row, cellInBox.col);
+	const { row: boxRow, col: boxCol } = getBoxOrigin(cellInBox.row, cellInBox.col);
 
 	console.log(`Removing notes ${[...notes]} from box (${boxRow},${boxCol}).`);
 
 	let totalNotesRemoved = 0;
 	let cellsModified = 0;
-	for (let r = boxRow; r < boxRow + 3; r++) {
-		for (let c = boxCol; c < boxCol + 3; c++) {
-			if (cells.includes(r * 9 + c) || grid[r][c].value !== null) continue;
+	for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
+		for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
+			if (cells.includes(toGridIndex(r, c)) || grid[r][c].value !== null) continue;
 
 			const notesRemoved = removeNotesInCell(grid, r, c, notes);
 			totalNotesRemoved += notesRemoved;
@@ -248,7 +278,7 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): { found: b
 		console.log(`Naked pair found at row (${row}), columns (${col},${pairCol}), values: ${[...cell.notes]}.`);
 		totalNotesRemoved += removeNotesInRow(grid, row, [col, pairCol], cell.notes);
 		if (areCellsInSameBox([{ row, col }, { row, col: pairCol }])) {
-			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [row * 9 + col, row * 9 + pairCol], cell.notes);
+			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [toGridIndex(row, col), toGridIndex(row, pairCol)], cell.notes);
 		}
 	}
 
@@ -258,7 +288,7 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): { found: b
 		console.log(`Naked pair found at column (${col}), rows (${row},${pairRow}), values: ${[...cell.notes]}.`);
 		totalNotesRemoved += removeNotesInColumn(grid, col, [row, pairRow], cell.notes);
 		if (areCellsInSameBox([{ row, col }, { row: pairRow, col }])) {
-			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [row * 9 + col, pairRow * 9 + col], cell.notes);
+			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [toGridIndex(row, col), toGridIndex(pairRow, col)], cell.notes);
 		}
 	}
 
@@ -266,7 +296,7 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): { found: b
 	if (pairBox !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at (${row},${col}) and (${pairBox.row},${pairBox.col}), values: ${[...cell.notes]}.`);
-		totalNotesRemoved += removeNotesInBox(grid, pairBox, [row * 9 + col, pairBox.row * 9 + pairBox.col], cell.notes);
+		totalNotesRemoved += removeNotesInBox(grid, pairBox, [toGridIndex(row, col), toGridIndex(pairBox.row, pairBox.col)], cell.notes);
 	}
 
 	return { found: pairFound, applied: totalNotesRemoved > 0 };
@@ -275,8 +305,8 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): { found: b
 function applyNakedPairs(grid: Cell[][]) {
 	let nakedPairs = 0;
 	let appliedPairs = 0;
-	for (let row = 0; row < 9; row++) {
-		for (let col = 0; col < 9; col++) {
+	for (let row = 0; row < GRID_SIZE; row++) {
+		for (let col = 0; col < GRID_SIZE; col++) {
 			const { found, applied } = processNakedPairs(grid, row, col);
 			if (found) {
 				nakedPairs++;
@@ -291,10 +321,10 @@ function applyNakedPairs(grid: Cell[][]) {
 
 // Create the initial grid
 function createInitialGrid(): Cell[][] {
-	return Array(9)
+	return Array(GRID_SIZE)
 		.fill(null)
 		.map(() =>
-			Array(9)
+			Array(GRID_SIZE)
 				.fill(null)
 				.map(() => ({
 					value: null,
@@ -343,7 +373,7 @@ function createGameStore() {
 		const conflictingCells: { row: number; col: number }[] = [];
 
 		// Check row
-		for (let c = 0; c < 9; c++) {
+		for (let c = 0; c < GRID_SIZE; c++) {
 			if (c !== col) {
 				const cellValue = typeof grid[row][c] === 'number'
 					? grid[row][c] as number
@@ -355,7 +385,7 @@ function createGameStore() {
 		}
 
 		// Check column
-		for (let r = 0; r < 9; r++) {
+		for (let r = 0; r < GRID_SIZE; r++) {
 			if (r !== row) {
 				const cellValue = typeof grid[r][col] === 'number'
 					? grid[r][col] as number
@@ -366,10 +396,9 @@ function createGameStore() {
 			}
 		}
 
-		// Check 3x3 box
-		const { boxRow, boxCol } = getBoxIndices(row, col);
-		for (let r = boxRow; r < boxRow + 3; r++) {
-			for (let c = boxCol; c < boxCol + 3; c++) {
+		const { row: boxRow, col: boxCol } = getBoxOrigin(row, col);
+		for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
+			for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
 				if (r !== row || c !== col) {
 					const cellValue = typeof grid[r][c] === 'number'
 						? grid[r][c] as number
@@ -444,8 +473,8 @@ function createGameStore() {
 
 			// Create the grid with the puzzle
 			const newGrid = createInitialGrid();
-			for (let row = 0; row < 9; row++) {
-				for (let col = 0; col < 9; col++) {
+			for (let row = 0; row < GRID_SIZE; row++) {
+				for (let col = 0; col < GRID_SIZE; col++) {
 					if (puzzle[row][col] !== null) {
 						newGrid[row][col].value = puzzle[row][col];
 						newGrid[row][col].isInitial = true;
@@ -479,8 +508,8 @@ function createGameStore() {
 				let firstEmptyCell = { row: 0, col: 0 };
 				let found = false;
 
-				for (let r = 0; r < 9 && !found; r++) {
-					for (let c = 0; c < 9 && !found; c++) {
+				for (let r = 0; r < GRID_SIZE && !found; r++) {
+					for (let c = 0; c < GRID_SIZE && !found; c++) {
 						if (newState.grid[r][c].value === null) {
 							firstEmptyCell = { row: r, col: c };
 							found = true;
@@ -512,8 +541,8 @@ function createGameStore() {
 				newState.grid = createInitialGrid();
 
 				// Restore initial values
-				for (let row = 0; row < 9; row++) {
-					for (let col = 0; col < 9; col++) {
+				for (let row = 0; row < GRID_SIZE; row++) {
+					for (let col = 0; col < GRID_SIZE; col++) {
 						if (state.initialGrid[row][col] !== null) {
 							newState.grid[row][col].value = state.initialGrid[row][col];
 							newState.grid[row][col].isInitial = true;
@@ -534,8 +563,8 @@ function createGameStore() {
 				let firstEmptyCell = { row: 0, col: 0 };
 				let found = false;
 
-				for (let r = 0; r < 9 && !found; r++) {
-					for (let c = 0; c < 9 && !found; c++) {
+				for (let r = 0; r < GRID_SIZE && !found; r++) {
+					for (let c = 0; c < GRID_SIZE && !found; c++) {
 						if (newState.grid[r][c].value === null) {
 							firstEmptyCell = { row: r, col: c };
 							found = true;
@@ -584,8 +613,8 @@ function createGameStore() {
 				newState.grid[state.selectedCell.row][state.selectedCell.col].isSelected = false;
 
 				// Clear all highlights
-				for (let r = 0; r < 9; r++) {
-					for (let c = 0; c < 9; c++) {
+				for (let r = 0; r < GRID_SIZE; r++) {
+					for (let c = 0; c < GRID_SIZE; c++) {
 						newState.grid[r][c].isHighlighted = false;
 					}
 				}
@@ -597,8 +626,8 @@ function createGameStore() {
 				// Highlight cells with the same value
 				const selectedValue = newState.grid[row][col].value;
 				if (selectedValue !== null) {
-					for (let r = 0; r < 9; r++) {
-						for (let c = 0; c < 9; c++) {
+					for (let r = 0; r < GRID_SIZE; r++) {
+						for (let c = 0; c < GRID_SIZE; c++) {
 							if (newState.grid[r][c].value === selectedValue) {
 								newState.grid[r][c].isHighlighted = true;
 							}
@@ -733,23 +762,22 @@ function createGameStore() {
 						newState.grid[row][col].notes.clear();
 
 						// Remove this value from notes in the same row
-						for (let c = 0; c < 9; c++) {
+						for (let c = 0; c < GRID_SIZE; c++) {
 							if (c !== col) {
 								newState.grid[row][c].notes.delete(value);
 							}
 						}
 
 						// Remove this value from notes in the same column
-						for (let r = 0; r < 9; r++) {
+						for (let r = 0; r < GRID_SIZE; r++) {
 							if (r !== row) {
 								newState.grid[r][col].notes.delete(value);
 							}
 						}
 
-						// Remove this value from notes in the same 3x3 box
-						const { boxRow, boxCol } = getBoxIndices(row, col);
-						for (let r = boxRow; r < boxRow + 3; r++) {
-							for (let c = boxCol; c < boxCol + 3; c++) {
+						const { row: boxRow, col: boxCol } = getBoxOrigin(row, col);
+						for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
+							for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
 								if (r !== row || c !== col) {
 									newState.grid[r][c].notes.delete(value);
 								}
@@ -781,13 +809,13 @@ function createGameStore() {
 						newRow = Math.max(0, row - 1);
 						break;
 					case 'down':
-						newRow = Math.min(8, row + 1);
+						newRow = Math.min(GRID_SIZE - 1, row + 1);
 						break;
 					case 'left':
 						newCol = Math.max(0, col - 1);
 						break;
 					case 'right':
-						newCol = Math.min(8, col + 1);
+						newCol = Math.min(GRID_SIZE - 1, col + 1);
 						break;
 				}
 
@@ -827,15 +855,14 @@ function createGameStore() {
 				const newState = { ...state };
 
 				// For each empty cell
-				for (let row = 0; row < 9; row++) {
-					for (let col = 0; col < 9; col++) {
+				for (let row = 0; row < GRID_SIZE; row++) {
+					for (let col = 0; col < GRID_SIZE; col++) {
 						const cell = newState.grid[row][col];
 						if (cell.value === null) {
 							// Clear existing notes
 							cell.notes.clear();
 
-							// Check each possible number (1-9)
-							for (let num = 1; num <= 9; num++) {
+							for (let num = 1; num <= GRID_SIZE; num++) {
 								// Check if number can be placed in this cell
 								if (!hasConflict(newState.grid, row, col, num)) {
 									cell.notes.add(num);
@@ -906,8 +933,8 @@ function createGameStore() {
 			update((state) => {
 				const newState = { ...state };
 				// Mark all cells with values as initial
-				for (let row = 0; row < 9; row++) {
-					for (let col = 0; col < 9; col++) {
+				for (let row = 0; row < GRID_SIZE; row++) {
+					for (let col = 0; col < GRID_SIZE; col++) {
 						if (newState.grid[row][col].value !== null) {
 							newState.grid[row][col].isInitial = true;
 						}
@@ -946,20 +973,18 @@ function createGameStore() {
 	};
 }
 
-// given a 81 digit string, return a 9x9 grid
 function stringToGrid(str: string): (number | null)[][] {
-	const grid = Array(9)
+	const grid = Array(GRID_SIZE)
 		.fill(null)
-		.map(() => Array(9).fill(null));
+		.map(() => Array(GRID_SIZE).fill(null));
 
-	for (let i = 0; i < 81; i++) {
+	for (let i = 0; i < BOARD_SIZE; i++) {
 		if (str[i] === '0') {
 			continue;
 		}
 
-		const row = Math.floor(i / 9);
-		const col = i % 9;
-		grid[row][col] = parseInt(str[i]);
+		const cell = fromGridIndex(i);
+		grid[cell.row][cell.col] = parseInt(str[i]);
 	}
 	return grid;
 }
@@ -998,8 +1023,8 @@ function generateSudokuPuzzle(difficulty: Difficulty): (number | null)[][] {
 
 	// Create a list of all positions
 	const positions = [];
-	for (let row = 0; row < 9; row++) {
-		for (let col = 0; col < 9; col++) {
+	for (let row = 0; row < GRID_SIZE; row++) {
+		for (let col = 0; col < GRID_SIZE; col++) {
 			positions.push({ row, col });
 		}
 	}
@@ -1051,14 +1076,14 @@ function hasUniqueSolution(puzzle: (number | null)[][]): boolean {
 
 	function solve(puzzle: (number | null)[][], row: number, col: number): boolean {
 		if (solutionCount >= maxSolutions) return false;
-		if (row === 9) {
+		if (row === GRID_SIZE) {
 			solutionCount++;
 			return solutionCount < maxSolutions;
 		}
-		if (col === 9) return solve(puzzle, row + 1, 0);
+		if (col === GRID_SIZE) return solve(puzzle, row + 1, 0);
 		if (puzzle[row][col] !== null) return solve(puzzle, row, col + 1);
 
-		for (let num = 1; num <= 9; num++) {
+		for (let num = 1; num <= GRID_SIZE; num++) {
 			if (isValidNumberPlacement(puzzle as number[][], row, col, num)) {
 				puzzle[row][col] = num;
 				if (!solve(puzzle, row, col + 1)) return false;
@@ -1075,9 +1100,9 @@ function hasUniqueSolution(puzzle: (number | null)[][]): boolean {
 // Generate a solved Sudoku grid
 function generateSolvedGrid(): number[][] {
 	// Start with an empty grid
-	const grid = Array(9)
+	const grid = Array(GRID_SIZE)
 		.fill(null)
-		.map(() => Array(9).fill(0));
+		.map(() => Array(GRID_SIZE).fill(0));
 
 	// Fill the grid with a valid Sudoku solution
 	fillGrid(grid);
@@ -1092,9 +1117,10 @@ function fillGrid(grid: number[][]): boolean {
 	let col = 0;
 	let isEmpty = false;
 
-	for (let i = 0; i < 81; i++) {
-		row = Math.floor(i / 9);
-		col = i % 9;
+	for (let i = 0; i < BOARD_SIZE; i++) {
+		const cell = fromGridIndex(i);
+		row = cell.row;
+		col = cell.col;
 
 		if (grid[row][col] === 0) {
 			isEmpty = true;
@@ -1107,8 +1133,7 @@ function fillGrid(grid: number[][]): boolean {
 		return true;
 	}
 
-	// Try numbers 1-9 in the empty cell
-	const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+	const numbers = Array.from({ length: GRID_SIZE }, (_, i) => i + 1);
 
 	// Shuffle the numbers for variety
 	for (let i = numbers.length - 1; i > 0; i--) {
@@ -1169,13 +1194,13 @@ function checkSolution(state: GameState): GameState {
 	const grid = newState.grid;
 
 	// Check each cell
-	for (let row = 0; row < 9; row++) {
-		for (let col = 0; col < 9; col++) {
+	for (let row = 0; row < GRID_SIZE; row++) {
+		for (let col = 0; col < GRID_SIZE; col++) {
 			const cell = grid[row][col];
 			if (cell.value === null) continue;
 
 			// Check row
-			for (let c = 0; c < 9; c++) {
+			for (let c = 0; c < GRID_SIZE; c++) {
 				if (c !== col && grid[row][c].value === cell.value) {
 					// Flash the conflicting cells
 					cell.isFlashing = true;
@@ -1184,7 +1209,7 @@ function checkSolution(state: GameState): GameState {
 			}
 
 			// Check column
-			for (let r = 0; r < 9; r++) {
+			for (let r = 0; r < GRID_SIZE; r++) {
 				if (r !== row && grid[r][col].value === cell.value) {
 					// Flash the conflicting cells
 					cell.isFlashing = true;
@@ -1192,11 +1217,9 @@ function checkSolution(state: GameState): GameState {
 				}
 			}
 
-			// Check 3x3 box
-			const boxRow = Math.floor(row / 3) * 3;
-			const boxCol = Math.floor(col / 3) * 3;
-			for (let r = boxRow; r < boxRow + 3; r++) {
-				for (let c = boxCol; c < boxCol + 3; c++) {
+			const { row: boxRow, col: boxCol } = getBoxOrigin(row, col);
+			for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
+				for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
 					if (r !== row && c !== col && grid[r][c].value === cell.value) {
 						// Flash the conflicting cells
 						cell.isFlashing = true;
