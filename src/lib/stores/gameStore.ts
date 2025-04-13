@@ -179,7 +179,7 @@ function removeNotesInCell(grid: Cell[][], row: number, col: number, notes: Set<
 }
 
 // given a grid, a row and columns, return notes from all cells in the row except the columns
-function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes: Set<number>) {
+function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes: Set<number>): number {
 	console.log(`Removing notes ${[...notes]} from row (${row}).`);
 
 	let totalNotesRemoved = 0;
@@ -193,10 +193,11 @@ function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes:
 	}
 
 	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in row (${row}).`);
+	return totalNotesRemoved;
 }
 
 // now do the same for the column and rows
-function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes: Set<number>) {
+function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes: Set<number>): number {
 	console.log(`Removing notes ${[...notes]} from column (${col}).`);
 
 	let totalNotesRemoved = 0;
@@ -210,10 +211,11 @@ function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes:
 	}
 
 	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in column (${col}).`);
+	return totalNotesRemoved;
 }
 
 function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number },
-	cells: number[], notes: Set<number>) {
+	cells: number[], notes: Set<number>): number {
 	const { boxRow, boxCol } = getBoxIndices(cellInBox.row, cellInBox.col);
 
 	console.log(`Removing notes ${[...notes]} from box (${boxRow},${boxCol}).`);
@@ -231,21 +233,22 @@ function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number 
 	}
 
 	console.log(`${totalNotesRemoved} notes removed from ${cellsModified} cells in box (${boxRow},${boxCol}).`);
+	return totalNotesRemoved;
 }
 
-function processNakedPairs(grid: Cell[][], row: number, col: number): boolean {
+function processNakedPairs(grid: Cell[][], row: number, col: number): { found: boolean, applied: boolean } {
 	const cell = grid[row][col];
-	if (cell.value !== null || cell.notes.size !== 2) return false;
+	if (cell.value !== null || cell.notes.size !== 2) return { found: false, applied: false };
 
 	let pairFound = false;
-
+	let totalNotesRemoved = 0;
 	const pairCol = getNakedPairInRow(grid, row, col);
 	if (pairCol !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at row (${row}), columns (${col},${pairCol}), values: ${[...cell.notes]}.`);
-		removeNotesInRow(grid, row, [col, pairCol], cell.notes);
+		totalNotesRemoved += removeNotesInRow(grid, row, [col, pairCol], cell.notes);
 		if (areCellsInSameBox([{ row, col }, { row, col: pairCol }])) {
-			removeNotesInBox(grid, { row, col }, [row * 9 + col, row * 9 + pairCol], cell.notes);
+			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [row * 9 + col, row * 9 + pairCol], cell.notes);
 		}
 	}
 
@@ -253,9 +256,9 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): boolean {
 	if (pairRow !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at column (${col}), rows (${row},${pairRow}), values: ${[...cell.notes]}.`);
-		removeNotesInColumn(grid, col, [row, pairRow], cell.notes);
+		totalNotesRemoved += removeNotesInColumn(grid, col, [row, pairRow], cell.notes);
 		if (areCellsInSameBox([{ row, col }, { row: pairRow, col }])) {
-			removeNotesInBox(grid, { row, col }, [row * 9 + col, pairRow * 9 + col], cell.notes);
+			totalNotesRemoved += removeNotesInBox(grid, { row, col }, [row * 9 + col, pairRow * 9 + col], cell.notes);
 		}
 	}
 
@@ -263,22 +266,27 @@ function processNakedPairs(grid: Cell[][], row: number, col: number): boolean {
 	if (pairBox !== null) {
 		pairFound = true;
 		console.log(`Naked pair found at (${row},${col}) and (${pairBox.row},${pairBox.col}), values: ${[...cell.notes]}.`);
-		removeNotesInBox(grid, pairBox, [row * 9 + col, pairBox.row * 9 + pairBox.col], cell.notes);
+		totalNotesRemoved += removeNotesInBox(grid, pairBox, [row * 9 + col, pairBox.row * 9 + pairBox.col], cell.notes);
 	}
 
-	return pairFound;
+	return { found: pairFound, applied: totalNotesRemoved > 0 };
 }
 
 function applyNakedPairs(grid: Cell[][]) {
 	let nakedPairs = 0;
+	let appliedPairs = 0;
 	for (let row = 0; row < 9; row++) {
 		for (let col = 0; col < 9; col++) {
-			if (processNakedPairs(grid, row, col)) {
+			const { found, applied } = processNakedPairs(grid, row, col);
+			if (found) {
 				nakedPairs++;
+			}
+			if (applied) {
+				appliedPairs++;
 			}
 		}
 	}
-	console.log(`${nakedPairs} naked pairs applied.`);
+	console.log(`${nakedPairs} naked pairs found, ${appliedPairs} applied.`);
 }
 
 // Create the initial grid
@@ -1031,7 +1039,8 @@ function generateSudokuPuzzle(difficulty: Difficulty): (number | null)[][] {
 		currentPosition++;
 	}
 
-	const str = "800000001020000070050813020210905087009070300400000002000306000700000009060080050";
+	const str = "080072100000000900000040008000005000900700000160900400000000350040300010208000604";
+	// const str = "800000001020000070050813020210905087009070300400000002000306000700000009060080050";
 	return stringToGrid(str);
 }
 
