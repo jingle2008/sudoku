@@ -209,7 +209,7 @@ function removeNotesInCell(grid: Cell[][], row: number, col: number, notes: Set<
 }
 
 // given a grid, a row and columns, return notes from all cells in the row except the columns
-function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes: Set<number>): number {
+export function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes: Set<number>): number {
 	console.log(`Removing notes ${[...notes]} from row (${row}).`);
 
 	let totalNotesRemoved = 0;
@@ -227,7 +227,7 @@ function removeNotesInRow(grid: Cell[][], row: number, columns: number[], notes:
 }
 
 // now do the same for the column and rows
-function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes: Set<number>): number {
+export function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes: Set<number>): number {
 	console.log(`Removing notes ${[...notes]} from column (${col}).`);
 
 	let totalNotesRemoved = 0;
@@ -244,7 +244,7 @@ function removeNotesInColumn(grid: Cell[][], col: number, rows: number[], notes:
 	return totalNotesRemoved;
 }
 
-function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number },
+export function removeNotesInBox(grid: Cell[][], cellInBox: { row: number, col: number },
 	cells: number[], notes: Set<number>): number {
 	const { row: boxRow, col: boxCol } = getBoxOrigin(cellInBox.row, cellInBox.col);
 
