@@ -7,6 +7,15 @@
 	export let onCancel: () => void;
 	export let isOpen = false;
 
+	// Manage focus trapping inside modal for accessibility
+	let dialogElement: HTMLDialogElement;
+
+	// Focus the dialog when opened
+	$: if (isOpen && dialogElement) {
+		dialogElement.showModal();
+		dialogElement.focus();
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			onCancel();
@@ -17,19 +26,27 @@
 </script>
 
 {#if isOpen}
-	<dialog class="modal-overlay" open on:click={onCancel} on:keydown|stopPropagation={handleKeyDown}>
+	<dialog
+		bind:this={dialogElement}
+		class="modal-overlay"
+		open
+		on:click={onCancel}
+		on:keydown|stopPropagation={handleKeyDown}
+		aria-modal="true"
+		role="dialog"
+		aria-labelledby="dialog-title"
+		aria-describedby="dialog-message"
+	>
 		<div
 			class="modal"
 			on:click|stopPropagation
-			on:keydown={(e) => e.key === 'Escape' && onCancel()}
-			role="dialog"
 			tabindex="0"
 		>
-			<h2>{title}</h2>
-			<p>{message}</p>
+			<h2 id="dialog-title">{title}</h2>
+			<p id="dialog-message">{message}</p>
 			<div class="modal-buttons">
-				<button class="cancel" on:click={onCancel}>{cancelText}</button>
-				<button class="confirm" on:click={onConfirm}>{confirmText}</button>
+				<button class="cancel" on:click={onCancel} aria-label="Cancel">{cancelText}</button>
+				<button class="confirm" on:click={onConfirm} aria-label="Confirm">{confirmText}</button>
 			</div>
 		</div>
 	</dialog>

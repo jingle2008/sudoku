@@ -1,7 +1,7 @@
 import { writable, derived } from 'svelte/store';
-import { GRID_SIZE, BOX_SIZE, Coord } from '$lib/sudoku/helpers';
-
-const BOARD_SIZE = GRID_SIZE * GRID_SIZE;
+import { Coord } from '$lib/sudoku/coord';
+import { BOARD_SIZE, BOX_SIZE, GRID_SIZE, Group } from '$lib/sudoku/constants';
+import { isValidPlacement } from '$lib/sudoku/engine';
 
 export type Cell = {
 	value: number | null;
@@ -19,12 +19,6 @@ export type GameState = {
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
-enum Group {
-	Row = 'row',
-	Column = 'column',
-	Box = 'box'
-}
-
 // Constants for repeated values
 const EMPTY_CELL = null;
 
@@ -41,22 +35,6 @@ function getCellInBox(box: { row: number, col: number }, index: number): { row: 
 		row: box.row + rowOffset,
 		col: box.col + colOffset
 	};
-}
-
-// Helper function to check if a number can be placed in a cell
-function isValidNumberPlacement(grid: number[][], pos: Coord, value: number): boolean {
-	const { row, col } = pos;
-	const box = pos.boxOrigin;
-	for (let i = 0; i < GRID_SIZE; i++) {
-		if ((i !== col && grid[row][i] === value) || (i !== row && grid[i][col] === value)) {
-			return false;
-		}
-		const cell = getCellInBox(box, i);
-		if (grid[cell.row][cell.col] === value) {
-			return false;
-		}
-	}
-	return true;
 }
 
 /** Removes `notes` from every *empty* cell in the supplied coordinates list.  
@@ -1023,7 +1001,7 @@ function hasUniqueSolution(puzzle: (number | null)[][]): boolean {
 		if (puzzle[row][col] !== null) return solve(puzzle, row, col + 1);
 
 		for (let num = 1; num <= GRID_SIZE; num++) {
-			if (isValidNumberPlacement(puzzle as number[][], new Coord(row, col), num)) {
+			if (isValidPlacement(puzzle as number[][], new Coord(row, col), num)) {
 				puzzle[row][col] = num;
 				if (!solve(puzzle, row, col + 1)) return false;
 				puzzle[row][col] = null;
@@ -1082,7 +1060,7 @@ function fillGrid(grid: number[][]): boolean {
 
 	for (const num of numbers) {
 		// Check if the number can be placed in the cell
-		if (isValidNumberPlacement(grid, new Coord(row, col), num)) {
+		if (isValidPlacement(grid, new Coord(row, col), num)) {
 			// Place the number
 			grid[row][col] = num;
 

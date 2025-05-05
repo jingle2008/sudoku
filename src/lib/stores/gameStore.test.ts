@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { Cell } from './gameStore';
 import { removeNotesInRow, removeNotesInColumn, removeNotesInBox, getNakedPairInRow, getNakedPairInColumn, getNakedPairInBox } from './gameStore';
-import { Coord } from '$lib/sudoku/helpers';
+import { Coord } from '$lib/sudoku/coord';
 
 describe('Game Store Functions', () => {
     let grid: Cell[][];
@@ -21,23 +21,6 @@ describe('Game Store Functions', () => {
             }))
         );
     });
-
-    // it('removeNotesInGroup removes notes correctly', () => {
-    //     // Setup test data
-    //     grid[0][0].notes.add(1);
-    //     grid[0][1].notes.add(2);
-    //     grid[0][2].notes.add(3);
-
-    //     const group = [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }];
-    //     const notesToRemove = new Set([1, 2]);
-
-    //     const removedCount = removeNotesInGroup(grid, group, notesToRemove);
-
-    //     expect(removedCount).toBe(2);
-    //     expect(grid[0][0].notes.has(1)).toBe(false);
-    //     expect(grid[0][1].notes.has(2)).toBe(false);
-    //     expect(grid[0][2].notes.has(3)).toBe(true); // Should remain unchanged
-    // });
 
     it('removeNotesInRow removes notes correctly', () => {
         grid[0][0].notes.add(1);

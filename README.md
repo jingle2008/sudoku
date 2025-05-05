@@ -60,10 +60,20 @@ yarn dev
 
 ## Technologies Used
 
-- SvelteKit
-- TypeScript
-- CSS Variables for theming
+- SvelteKit for frontend framework
+- TypeScript for safe typings
+- Vitest for testing
+- Tailwind CSS for styling
+- Vite as build tool
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit pull requests for any improvements or bug fixes.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
+
+## Contact
+
+For questions or support, open issues on GitHub or contact the maintainer via email.
