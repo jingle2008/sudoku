@@ -1,79 +1,26 @@
-# Sudoku Game
+## Sudoku Core Algorithms
 
-A modern, responsive Sudoku game built with SvelteKit.
+### Running Tests
 
-## Features
+To run the unit tests for the Sudoku engine and generator:
 
-- Multiple difficulty levels: Easy, Medium, Hard, Expert, Master, and Extreme
-- Timer to track your solving time
-- Pencil mode for taking notes
-- Highlighting of cells with the same value
-- Undo/Redo functionality
-- Mobile-responsive design
-- Keyboard navigation support
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or later)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/sudoku.git
-cd sudoku
+npm run test
 ```
 
-2. Install dependencies
+### Running Coverage
+
+To generate a code coverage report for the core algorithms:
+
 ```bash
-npm install
-# or
-yarn install
+npm run coverage
 ```
 
-3. Start the development server
-```bash
-npm run dev
-# or
-yarn dev
-```
+The report will be output in the `coverage/` directory.
 
-4. Open your browser and navigate to `http://localhost:5173`
+### Core Algorithm Implementation
 
-## How to Play
+The core Sudoku solving and puzzle generation logic is deduplicated and optimized for performance. Both the solver and generator use a shared bit-mask-based backtracking implementation in [`src/lib/sudoku/bitmaskSolver.ts`](src/lib/sudoku/bitmaskSolver.ts). This ensures maximum code reuse and maintainability.
 
-1. Select a difficulty level from the home screen
-2. Use the number pad to fill in cells
-3. Toggle between Pen mode (for final answers) and Pencil mode (for notes)
-4. Use the Check button to verify your solution
-5. Use Undo/Redo to correct mistakes
-
-## Keyboard Shortcuts
-
-- Arrow keys or h,j,k,l: Navigate between cells
-- 1-9: Enter a number
-- Backspace/Delete: Clear a cell
-- p: Toggle pencil mode
-
-## Technologies Used
-
-- SvelteKit for frontend framework
-- TypeScript for safe typings
-- Vitest for testing
-- Tailwind CSS for styling
-- Vite as build tool
-
-## Contributing
-
-Contributions are welcome! Please fork the repository and submit pull requests for any improvements or bug fixes.
-
-## License
-
-MIT License
-
-## Contact
-
-For questions or support, open issues on GitHub or contact the maintainer via email.
+- To modify or extend the core backtracking logic, update `bitmaskBacktrack` in `bitmaskSolver.ts`.
+- For property-based and randomized tests, see [`src/lib/sudoku/bitmaskSolver.test.ts`](src/lib/sudoku/bitmaskSolver.test.ts).

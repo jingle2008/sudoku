@@ -4,7 +4,7 @@
  */
 import { BOX_SIZE, GRID_SIZE, Group } from "./constants";
 import { Coord } from "./coord";
-import type { Cell } from "$lib/stores/gameStore";
+import type { Cell } from "$lib/sudoku/types";
 
 /**
  * Removes notes from every *empty* cell in the supplied coordinates list.

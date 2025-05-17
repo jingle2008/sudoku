@@ -1,7 +1,7 @@
 // src/lib/stores/gameStore.test.ts
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Cell } from './gameStore';
+import type { Cell } from '$lib/sudoku/types';
 import {
 	removeNotesInRow,
 	removeNotesInColumn,

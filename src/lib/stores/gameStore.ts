@@ -30,14 +30,7 @@ import {
 	isGameComplete
 } from '$lib/sudoku/validationUtils';
 
-export type Cell = {
-	value: number | null;
-	notes: Set<number>;
-	isSelected: boolean;
-	isHighlighted: boolean;
-	isInitial: boolean;
-	isFlashing: boolean;
-};
+import type { Cell } from '$lib/sudoku/types';
 
 export type GameState = {
 	grid: Cell[][];

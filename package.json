@@ -15,7 +15,14 @@
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"coverage": "vitest run --coverage"
+	},
+	"lint-staged": {
+		"*.{js,ts,svelte,md,json,css}": [
+			"prettier --write",
+			"eslint --max-warnings 0"
+		]
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "^3",
@@ -41,7 +48,9 @@
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.5.1",
 		"globals": "^16.0.0",
+		"husky": "^9.1.7",
 		"jsdom": "^26.0.0",
+		"lint-staged": "^16.0.0",
 		"playwright": "^1.51.1",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
