@@ -46,37 +46,59 @@ export function isValidPlacement(
  * @param maxSolutions - Optional: stop after this many solutions
  * @returns True if a solution was found (for solve), or number of solutions (for counting)
  */
+export function getLegalValues(grid: Grid, row: number, col: number): number[] {
+    const present = new Set<number>();
+    for (let i = 0; i < GRID_SIZE; i++) {
+        if (grid[row][i] !== null) present.add(grid[row][i]!);
+        if (grid[i][col] !== null) present.add(grid[i][col]!);
+    }
+    const boxRow = Math.floor(row / BOX_SIZE) * BOX_SIZE;
+    const boxCol = Math.floor(col / BOX_SIZE) * BOX_SIZE;
+    for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
+        for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
+            if (grid[r][c] !== null) present.add(grid[r][c]!);
+        }
+    }
+    const legal: number[] = [];
+    for (let v = 1; v <= GRID_SIZE; v++) {
+        if (!present.has(v)) legal.push(v);
+    }
+    return legal;
+}
+
+export function findMRVCell(grid: Grid): { row: number, col: number, legal: number[] } | null {
+    let minOptions = GRID_SIZE + 1;
+    let best: { row: number, col: number, legal: number[] } | null = null;
+    for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+            if (grid[row][col] === null) {
+                const legal = getLegalValues(grid, row, col);
+                if (legal.length < minOptions) {
+                    minOptions = legal.length;
+                    best = { row, col, legal };
+                    if (minOptions === 1) return best; // can't do better
+                }
+            }
+        }
+    }
+    return best;
+}
+
+import { bitmaskBacktrack } from "./bitmaskSolver";
+
 function backtrack(
     grid: Grid,
     index: number,
     onSolution: () => boolean | void,
     maxSolutions?: number
 ): boolean | number {
-    let solutionCount = 0;
-    let found = false;
-
-    function dfs(idx: number): boolean {
-        if (maxSolutions && solutionCount >= maxSolutions) return false;
-        if (idx === GRID_SIZE * GRID_SIZE) {
-            solutionCount++;
-            const res = onSolution();
-            if (res === true) found = true;
-            return res === true;
-        }
-        const { row, col } = Coord.fromIndex(idx);
-        if (grid[row][col] !== null) return dfs(idx + 1);
-
-        for (let val = 1; val <= 9; val++) {
-            if (!isValidPlacement(grid, new Coord(row, col), val)) continue;
-            grid[row][col] = val;
-            if (dfs(idx + 1)) return true;
-            grid[row][col] = null;
-        }
-        return false;
-    }
-
-    dfs(index);
-    return maxSolutions ? solutionCount : found;
+    return bitmaskBacktrack<number | null>(
+        grid,
+        (cell) => cell === null,
+        (row, col, value) => { grid[row][col] = value; },
+        onSolution,
+        maxSolutions
+    );
 }
 
 /**

@@ -2,9 +2,10 @@
  * @module puzzleGenerator
  * Functions for generating Sudoku puzzles of varying difficulty.
  */
-import { GRID_SIZE, BOARD_SIZE } from "./constants";
+import { GRID_SIZE, BOARD_SIZE, BOX_SIZE } from "./constants";
 import { Coord } from "./coord";
 import { isValidPlacement, hasUniqueSolution } from "./engine";
+import { bitmaskBacktrack } from "./bitmaskSolver";
 import type { Grid } from "./engine";
 import type { Difficulty } from "$lib/stores/gameStore";
 
@@ -73,53 +74,12 @@ export function generateSolvedGrid(): number[][] {
  * @returns True if the grid was successfully filled
  */
 function fillGrid(grid: number[][]): boolean {
-    // Find an empty cell
-    let row = 0;
-    let col = 0;
-    let isEmpty = false;
-
-    for (let i = 0; i < BOARD_SIZE; i++) {
-        const cell = Coord.fromIndex(i);
-        row = cell.row;
-        col = cell.col;
-
-        if (grid[row][col] === 0) {
-            isEmpty = true;
-            break;
-        }
-    }
-
-    // If no empty cell is found, the grid is filled
-    if (!isEmpty) {
-        return true;
-    }
-
-    const numbers = Array.from({ length: GRID_SIZE }, (_, i) => i + 1);
-
-    // Shuffle the numbers for variety
-    for (let i = numbers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-    }
-
-    for (const num of numbers) {
-        // Check if the number can be placed in the cell
-        if (isValidPlacement(grid as Grid, new Coord(row, col), num)) {
-            // Place the number
-            grid[row][col] = num;
-
-            // Recursively fill the rest of the grid
-            if (fillGrid(grid)) {
-                return true;
-            }
-
-            // If placing the number doesn't lead to a solution, backtrack
-            grid[row][col] = 0;
-        }
-    }
-
-    // No solution found
-    return false;
+    return !!bitmaskBacktrack<number>(
+        grid,
+        (cell) => cell === 0,
+        (row, col, value) => { grid[row][col] = value === null ? 0 : value; },
+        () => true
+    );
 }
 
 /**
