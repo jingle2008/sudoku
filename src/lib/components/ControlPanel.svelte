@@ -23,7 +23,7 @@
 	}
 </script>
 
-<div class="control-panel" role="region" aria-label="Sudoku control panel" tabindex="0" on:keydown={handleKeyDown}>
+<div class="control-panel" role="region" aria-label="Sudoku control panel">
 	<div class="mode-toggle" role="radiogroup" aria-label="Mode selection">
 		<button
 			class:active={$isPencilMode}

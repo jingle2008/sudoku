@@ -33,14 +33,12 @@
 		on:click={onCancel}
 		on:keydown|stopPropagation={handleKeyDown}
 		aria-modal="true"
-		role="dialog"
 		aria-labelledby="dialog-title"
 		aria-describedby="dialog-message"
 	>
 		<div
 			class="modal"
-			on:click|stopPropagation
-			tabindex="0"
+			role="document"
 		>
 			<h2 id="dialog-title">{title}</h2>
 			<p id="dialog-message">{message}</p>

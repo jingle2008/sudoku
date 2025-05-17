@@ -2,6 +2,33 @@ import { writable, derived } from 'svelte/store';
 import { Coord } from '$lib/sudoku/coord';
 import { BOARD_SIZE, BOX_SIZE, GRID_SIZE, Group } from '$lib/sudoku/constants';
 import { isValidPlacement } from '$lib/sudoku/engine';
+import { generateSudokuPuzzle, stringToGrid } from '$lib/sudoku/puzzleGenerator';
+import {
+	removeNotesInRow,
+	removeNotesInColumn,
+	removeNotesInBox,
+	getNakedPairInRow,
+	getNakedPairInColumn,
+	getNakedPairInBox,
+	areCellsInSameBox,
+	processNakedPairs,
+	applyNakedPairs,
+	getClues,
+	applyUniqueNotes,
+	processNakedSingle,
+	processNakedSingles,
+	removeMatchingNotes,
+	applyAutoNotes
+} from '$lib/sudoku/solverStrategies';
+import {
+	findConflictingCells,
+	hasConflict,
+	flashConflictingCells,
+	isGridValid,
+	isGridComplete,
+	checkSolution as validateSolution,
+	isGameComplete
+} from '$lib/sudoku/validationUtils';
 
 export type Cell = {
 	value: number | null;
@@ -39,237 +66,6 @@ function getCellInBox(box: { row: number, col: number }, index: number): { row: 
 
 /** Removes `notes` from every *empty* cell in the supplied coordinates list.  
  *  Returns total notes removed. */
-export function removeNotesFromCells(
-	grid: Cell[][],
-	targets: Coord[],
-	notes: Set<number>
-): number {
-	let removed = 0;
-	for (const { row, col } of targets) {
-		if (grid[row][col].value !== null) continue;
-		for (const n of notes) {
-			if (grid[row][col].notes.delete(n)) removed++;
-		}
-	}
-	return removed;
-}
-
-// Function to gather clues from a specific direction
-function getClues(grid: Cell[][], pos: Coord, direction: Group): Set<number> {
-	const notes = new Set<number>();
-	const { row, col } = pos;
-	const box = pos.boxOrigin;
-
-	for (let i = 0; i < GRID_SIZE; i++) {
-		let cell: Cell;
-		if (direction === Group.Row) {
-			if (i === col) continue;
-			cell = grid[row][i];
-		} else if (direction === Group.Column) {
-			if (i === row) continue;
-			cell = grid[i][col];
-		} else {
-			const c = getCellInBox(box, i);
-			if (c.row === row && c.col === col) continue;
-			cell = grid[c.row][c.col];
-		}
-
-		if (cell.value !== EMPTY_CELL) {
-			notes.add(cell.value);
-		} else {
-			cell.notes.forEach(note => notes.add(note));
-		}
-	}
-
-	return notes;
-}
-
-function applyUniqueNotes(grid: Cell[][], pos: Coord, group: Group): boolean {
-	const { row, col } = pos;
-	const cell = grid[row][col];
-	const clues = getClues(grid, pos, group);
-	const uniqueNotes = [...cell.notes].filter(note => !clues.has(note));
-
-	if (uniqueNotes.length === 1) {
-		const note = uniqueNotes[0];
-		console.log(`Naked single found at (${row},${col}), value: ${note}, unique in ${group}.`);
-		cell.notes.clear();
-		cell.notes.add(note);
-		return true;
-	}
-
-	return false;
-}
-
-function processNakedSingle(grid: Cell[][], pos: Coord): boolean {
-	const { row, col } = pos;
-	const cell = grid[row][col];
-	if (cell.value !== null) return false;
-
-	if (cell.notes.size === 1) {
-		const note = cell.notes.values().next().value;
-		console.log(`Naked single found at (${row},${col}), value: ${note}, only note in cell.`);
-		return true; // Indicate that a naked single was found
-	}
-
-	return applyUniqueNotes(grid, pos, Group.Row)
-		|| applyUniqueNotes(grid, pos, Group.Column)
-		|| applyUniqueNotes(grid, pos, Group.Box);
-}
-
-function processNakedSingles(grid: Cell[][]) {
-	let nakedSingles = 0;
-	for (let row = 0; row < GRID_SIZE; row++) {
-		for (let col = 0; col < GRID_SIZE; col++) {
-			if (processNakedSingle(grid, new Coord(row, col))) {
-				nakedSingles++;
-			}
-		}
-	}
-	console.log(`${nakedSingles} naked singles applied.`);
-}
-
-export function getNakedPairInRow(grid: Cell[][], pos: Coord): Coord | null {
-	const { row, col } = pos;
-	for (let c = col + 1; c < GRID_SIZE; c++) {
-		if (grid[row][c].notes.size !== 2) continue;
-		if (grid[row][c].notes.difference(grid[row][col].notes).size === 0) {
-			return pos.withCol(c);
-		}
-	}
-	return null;
-}
-
-export function getNakedPairInColumn(grid: Cell[][], pos: Coord): Coord | null {
-	const { row, col } = pos;
-	for (let r = row + 1; r < GRID_SIZE; r++) {
-		if (grid[r][col].notes.size !== 2) continue;
-		if (grid[r][col].notes.difference(grid[row][col].notes).size === 0) {
-			return pos.withRow(r);
-		}
-	}
-	return null;
-}
-
-export function getNakedPairInBox(grid: Cell[][], pos: Coord): Coord | null {
-	const { row, col } = pos;
-	const { row: boxRow, col: boxCol } = pos.boxOrigin;
-	for (let r = row + 1; r < boxRow + BOX_SIZE; r++) {
-		for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
-			if (grid[r][c].notes.size !== 2) continue;
-			if (grid[r][c].notes.difference(grid[row][col].notes).size === 0) {
-				return new Coord(r, c);
-			}
-		}
-	}
-	return null;
-}
-
-// given a set of cells, return if they are in the same box
-function areCellsInSameBox(cells: Coord[]) {
-	if (cells.length < 2) return true;
-
-	const box1 = cells[0].boxOrigin;
-	for (const cell of cells) {
-		const box2 = cell.boxOrigin;
-		if (!box1.equals(box2)) {
-			return false;
-		}
-	}
-	return true;
-}
-
-// Remove value from notes in the same row, column, and box
-function removeMatchingNodes(grid: Cell[][], pos: Coord, value: number) {
-	const { row, col } = pos;
-	for (let c = 0; c < GRID_SIZE; c++) {
-		if (c !== col) grid[row][c].notes.delete(value);
-	}
-	for (let r = 0; r < GRID_SIZE; r++) {
-		if (r !== row) grid[r][col].notes.delete(value);
-	}
-	const { row: boxRow, col: boxCol } = pos.boxOrigin;
-	for (let r = boxRow; r < boxRow + BOX_SIZE; r++) {
-		for (let c = boxCol; c < boxCol + BOX_SIZE; c++) {
-			if (r !== row || c !== col) grid[r][c].notes.delete(value);
-		}
-	}
-}
-
-// given a grid, a row and columns, return notes from all cells in the row except the columns
-export function removeNotesInRow(grid: Cell[][], anchor: Coord, skips: Coord[], notes: Set<number>): number {
-	console.log(`Removing notes ${[...notes]} from row.`);
-	const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Row, skips), notes);
-	console.log(`${removed} notes removed from cells in row.`);
-	return removed;
-}
-
-// now do the same for the column and rows
-export function removeNotesInColumn(grid: Cell[][], anchor: Coord, skips: Coord[], notes: Set<number>): number {
-	console.log(`Removing notes ${[...notes]} from column.`);
-	const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Column, skips), notes);
-	console.log(`${removed} notes removed from cells in column.`);
-	return removed;
-}
-
-export function removeNotesInBox(grid: Cell[][], anchor: Coord, skips: Coord[], notes: Set<number>): number {
-	console.log(`Removing notes ${[...notes]} from box.`);
-	const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Box, skips), notes);
-	console.log(`${removed} notes removed from cells in box.`);
-	return removed;
-}
-
-function processNakedPairs(grid: Cell[][], pos: Coord): { found: boolean, applied: boolean } {
-	const { row, col } = pos;
-	const cell = grid[row][col];
-	if (cell.value !== null || cell.notes.size !== 2) return { found: false, applied: false };
-
-	let pairFound = false;
-	let totalNotesRemoved = 0;
-	let pair = getNakedPairInRow(grid, pos);
-	if (pair !== null) {
-		pairFound = true;
-		console.log(`Naked pair found at row (${row}), columns (${col},${pair.col}), values: ${[...cell.notes]}.`);
-		const cells = [pos, pair];
-		totalNotesRemoved += removeNotesInRow(grid, pos, cells, cell.notes);
-		if (areCellsInSameBox(cells)) {
-			totalNotesRemoved += removeNotesInBox(grid, pos, cells, cell.notes);
-		}
-	}
-
-	pair = getNakedPairInColumn(grid, pos);
-	if (pair !== null) {
-		pairFound = true;
-		console.log(`Naked pair found at column (${col}), rows (${row},${pair.row}), values: ${[...cell.notes]}.`);
-		const cells = [pos, pair];
-		totalNotesRemoved += removeNotesInColumn(grid, pos, cells, cell.notes);
-		if (areCellsInSameBox(cells)) {
-			totalNotesRemoved += removeNotesInBox(grid, pos, cells, cell.notes);
-		}
-	}
-
-	pair = getNakedPairInBox(grid, pos);
-	if (pair !== null) {
-		pairFound = true;
-		console.log(`Naked pair found at (${row},${col}) and (${pair.row},${pair.col}), values: ${[...cell.notes]}.`);
-		totalNotesRemoved += removeNotesInBox(grid, pos, [pos, pair], cell.notes);
-	}
-
-	return { found: pairFound, applied: totalNotesRemoved > 0 };
-}
-
-function applyNakedPairs(grid: Cell[][]) {
-	let nakedPairs = 0;
-	let appliedPairs = 0;
-	for (let row = 0; row < GRID_SIZE; row++) {
-		for (let col = 0; col < GRID_SIZE; col++) {
-			const { found, applied } = processNakedPairs(grid, new Coord(row, col));
-			if (found) nakedPairs++;
-			if (applied) appliedPairs++;
-		}
-	}
-	console.log(`${nakedPairs} naked pairs found, ${appliedPairs} applied.`);
-}
 
 const createInitialCell = (): Cell => ({
 	value: null,
@@ -443,7 +239,7 @@ function createGameStore() {
 			}
 			state.grid[row][col].value = value;
 			state.grid[row][col].notes.clear();
-			removeMatchingNodes(state.grid, pos, value);
+			removeMatchingNotes(state.grid, pos, value);
 		} else {
 			state.grid[row][col].value = null;
 		}
@@ -813,6 +609,23 @@ function createGameStore() {
 			return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 		},
 
+		// Provide a hint by highlighting a naked single cell
+		provideHint: () =>
+			update((state) => {
+				const newState = { ...state };
+				let found = false;
+				for (let row = 0; row < GRID_SIZE && !found; row++) {
+					for (let col = 0; col < GRID_SIZE && !found; col++) {
+						const cell = newState.grid[row][col];
+						if (cell.value === null && cell.notes.size === 1) {
+							cell.isHighlighted = true;
+							found = true;
+						}
+					}
+				}
+				return newState;
+			}),
+
 		// Initialize an empty grid for editing
 		initializeEditingGrid: () => {
 			update((state) => {
@@ -890,101 +703,8 @@ function createGameStore() {
 	};
 }
 
-function stringToGrid(str: string): (number | null)[][] {
-	const grid = Array(GRID_SIZE)
-		.fill(null)
-		.map(() => Array(GRID_SIZE).fill(null));
 
-	for (let i = 0; i < BOARD_SIZE; i++) {
-		if (str[i] === '0') {
-			continue;
-		}
 
-		const cell = Coord.fromIndex(i);
-		grid[cell.row][cell.col] = parseInt(str[i]);
-	}
-	return grid;
-}
-
-// Generate a Sudoku puzzle of the specified difficulty
-function generateSudokuPuzzle(difficulty: Difficulty): (number | null)[][] {
-
-	// Start with a solved Sudoku grid
-	const solvedGrid = generateSolvedGrid();
-
-	// Create a copy of the solved grid
-	const puzzle = solvedGrid.map((row) => [...row]) as (number | null)[][];
-
-	// Determine how many cells to remove based on difficulty
-	let cellsToRemove = 0;
-	switch (difficulty) {
-		case 'easy':
-			cellsToRemove = 30; // 51 cells filled
-			break;
-		case 'medium':
-			cellsToRemove = 40; // 41 cells filled
-			break;
-		case 'hard':
-			cellsToRemove = 50; // 31 cells filled
-			break;
-		case 'expert':
-			cellsToRemove = 55; // 26 cells filled
-			break;
-		case 'master':
-			cellsToRemove = 60; // 21 cells filled
-			break;
-		case 'extreme':
-			cellsToRemove = 65; // 16 cells filled
-			break;
-	}
-
-	// Create a list of all positions
-	const positions = [];
-	for (let row = 0; row < GRID_SIZE; row++) {
-		for (let col = 0; col < GRID_SIZE; col++) {
-			positions.push({ row, col });
-		}
-	}
-
-	// Try removing cells one by one
-	let removedCells = 0;
-	let attempts = 0;
-	let currentPosition = positions.length;
-	const maxAttempts = 10000; // Prevent infinite loops
-
-	while (removedCells < cellsToRemove && attempts < maxAttempts) {
-		// Reshuffle when reaching end of positions
-		if (currentPosition >= positions.length) {
-			currentPosition = 0;
-			// Fisher-Yates reshuffle
-			for (let i = positions.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				[positions[i], positions[j]] = [positions[j], positions[i]];
-			}
-		}
-
-		const { row, col } = positions[currentPosition];
-
-		// Only attempt removal if cell still contains value
-		if (puzzle[row][col] !== null) {
-			const tempValue = puzzle[row][col];
-			puzzle[row][col] = null;
-
-			if (hasUniqueSolution(puzzle)) {
-				removedCells++;
-			} else {
-				puzzle[row][col] = tempValue;
-			}
-			attempts++;
-		}
-
-		currentPosition++;
-	}
-
-	const str = "080072100000000900000040008000005000900700000160900400000000350040300010208000604";
-	// const str = "800000001020000070050813020210905087009070300400000002000306000700000009060080050";
-	return stringToGrid(str);
-}
 
 // Check if a puzzle has a unique solution
 function hasUniqueSolution(puzzle: (number | null)[][]): boolean {

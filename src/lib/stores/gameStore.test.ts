@@ -2,7 +2,14 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { Cell } from './gameStore';
-import { removeNotesInRow, removeNotesInColumn, removeNotesInBox, getNakedPairInRow, getNakedPairInColumn, getNakedPairInBox } from './gameStore';
+import {
+	removeNotesInRow,
+	removeNotesInColumn,
+	removeNotesInBox,
+	getNakedPairInRow,
+	getNakedPairInColumn,
+	getNakedPairInBox
+} from '$lib/sudoku/solverStrategies';
 import { Coord } from '$lib/sudoku/coord';
 
 describe('Game Store Functions', () => {
