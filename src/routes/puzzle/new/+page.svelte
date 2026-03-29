@@ -173,6 +173,9 @@
 		align-items: center;
 		min-height: 100vh;
 		padding: 0.75rem;
+		box-sizing: border-box;
+		max-width: 100vw;
+		overflow-x: hidden;
 	}
 
 	.game-header {
@@ -289,18 +292,21 @@
 	}
 
 	.cell {
-		width: clamp(40px, 8vw, 60px);
-		height: clamp(40px, 8vw, 60px);
+		width: clamp(36px, calc((100vw - 2rem) / 9), 60px);
+		height: clamp(36px, calc((100vw - 2rem) / 9), 60px);
 		border: 1px solid var(--border-color);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: clamp(1.2rem, 3vw, 1.8rem);
+		font-size: clamp(1.1rem, 3vw, 1.8rem);
 		cursor: pointer;
 		user-select: none;
+		-webkit-user-select: none;
 		background-color: white;
 		outline: none;
 		position: relative;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.cell.selected {
@@ -363,19 +369,72 @@
 		color: var(--primary-color);
 	}
 
+	.grid {
+		max-width: calc(100vw - 1.5rem);
+	}
+
 	@media (max-width: 768px) {
+		.game-container {
+			justify-content: flex-start;
+			padding: 0.5rem;
+			gap: 0.5rem;
+		}
+
 		.game-content {
 			flex-direction: column;
 			align-items: center;
+			gap: 0.75rem;
 		}
 
 		.game-header {
 			max-width: 100%;
+			margin-bottom: 0.25rem;
 		}
 
 		.control-panel-container {
 			width: 100%;
 			max-width: 400px;
+		}
+
+		.cell {
+			width: calc((100vw - 1.5rem) / 9);
+			height: calc((100vw - 1.5rem) / 9);
+		}
+
+		.notes {
+			font-size: 0.65rem;
+			padding: 1px;
+		}
+
+		.note {
+			font-size: 0.6rem;
+		}
+	}
+
+	@media (max-width: 375px) {
+		.game-container {
+			padding: 0.25rem;
+		}
+
+		.cell {
+			width: calc((100vw - 1rem) / 9);
+			height: calc((100vw - 1rem) / 9);
+			font-size: 1rem;
+		}
+
+		.back-button {
+			padding: 0.3rem 0.5rem;
+			font-size: 0.8rem;
+		}
+
+		.difficulty-badge {
+			padding: 0.3rem 0.6rem;
+			font-size: 0.8rem;
+		}
+
+		.timer {
+			font-size: 0.9rem;
+			width: 80px;
 		}
 	}
 </style>

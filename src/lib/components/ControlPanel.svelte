@@ -170,10 +170,13 @@
 	cursor: pointer;
 	border-radius: 4px;
 	font-size: clamp(0.8rem, 2vw, 1rem);
+	min-height: 44px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 	transition:
 		transform 0.1s ease,
 		box-shadow 0.1s ease;
@@ -228,9 +231,13 @@
 	cursor: pointer;
 	border-radius: 4px;
 	aspect-ratio: 1;
+	min-height: 44px;
+	min-width: 44px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 	transition:
 		transform 0.1s ease,
 		box-shadow 0.1s ease;
@@ -268,10 +275,13 @@
 	font-weight: 500;
 	color: white;
 	font-size: clamp(0.8rem, 2vw, 1rem);
+	min-height: 44px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 	transition:
 		transform 0.1s ease,
 		box-shadow 0.1s ease;
@@ -345,6 +355,45 @@
 @media (max-width: 768px) {
 	.control-panel {
 		max-width: 100%;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+
+	.number-pad {
+		grid-template-columns: repeat(5, 1fr);
+		gap: 0.4rem;
+	}
+
+	.number-pad button {
+		aspect-ratio: auto;
+		min-height: 48px;
+		font-size: 1.5rem;
+	}
+
+	.action-row {
+		flex-wrap: wrap;
+	}
+
+	.action-buttons button {
+		min-height: 44px;
+		font-size: 0.85rem;
+	}
+}
+
+@media (max-width: 375px) {
+	.control-panel {
+		padding: 0.5rem;
+		gap: 0.5rem;
+	}
+
+	.number-pad {
+		grid-template-columns: repeat(5, 1fr);
+		gap: 0.25rem;
+	}
+
+	.number-pad button {
+		min-height: 44px;
+		font-size: 1.3rem;
 	}
 }
 </style>
