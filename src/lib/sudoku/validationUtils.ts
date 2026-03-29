@@ -14,7 +14,7 @@ import type { Grid } from "./engine";
  * @param value - The number to place
  * @returns Array of coordinates with conflicting values
  */
-export function findConflictingCells<T extends { value: number | null } | number>(
+export function findConflictingCells<T extends { value: number | null } | number | null>(
     grid: T[][],
     pos: Coord,
     value: number
@@ -71,7 +71,7 @@ export function findConflictingCells<T extends { value: number | null } | number
  * @param value - The number to place
  * @returns True if there is a conflict, false otherwise
  */
-export function hasConflict<T extends { value: number | null } | number>(
+export function hasConflict<T extends { value: number | null } | number | null>(
     grid: T[][],
     pos: Coord,
     value: number
