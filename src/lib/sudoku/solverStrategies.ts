@@ -42,9 +42,7 @@ export function removeNotesInRow(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    console.log(`Removing notes ${[...notes]} from row.`);
     const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Row, skips), notes);
-    console.log(`${removed} notes removed from cells in row.`);
     return removed;
 }
 
@@ -62,9 +60,7 @@ export function removeNotesInColumn(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    console.log(`Removing notes ${[...notes]} from column.`);
     const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Column, skips), notes);
-    console.log(`${removed} notes removed from cells in column.`);
     return removed;
 }
 
@@ -82,9 +78,7 @@ export function removeNotesInBox(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    console.log(`Removing notes ${[...notes]} from box.`);
     const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Box, skips), notes);
-    console.log(`${removed} notes removed from cells in box.`);
     return removed;
 }
 
@@ -178,7 +172,6 @@ export function processNakedPairs(grid: Cell[][], pos: Coord): { found: boolean,
     let pair = getNakedPairInRow(grid, pos);
     if (pair !== null) {
         pairFound = true;
-        console.log(`Naked pair found at row (${row}), columns (${col},${pair.col}), values: ${[...cell.notes]}.`);
         const cells = [pos, pair];
         totalNotesRemoved += removeNotesInRow(grid, pos, cells, cell.notes);
         if (areCellsInSameBox(cells)) {
@@ -189,7 +182,6 @@ export function processNakedPairs(grid: Cell[][], pos: Coord): { found: boolean,
     pair = getNakedPairInColumn(grid, pos);
     if (pair !== null) {
         pairFound = true;
-        console.log(`Naked pair found at column (${col}), rows (${row},${pair.row}), values: ${[...cell.notes]}.`);
         const cells = [pos, pair];
         totalNotesRemoved += removeNotesInColumn(grid, pos, cells, cell.notes);
         if (areCellsInSameBox(cells)) {
@@ -200,7 +192,6 @@ export function processNakedPairs(grid: Cell[][], pos: Coord): { found: boolean,
     pair = getNakedPairInBox(grid, pos);
     if (pair !== null) {
         pairFound = true;
-        console.log(`Naked pair found at (${row},${col}) and (${pair.row},${pair.col}), values: ${[...cell.notes]}.`);
         totalNotesRemoved += removeNotesInBox(grid, pos, [pos, pair], cell.notes);
     }
 
@@ -222,7 +213,6 @@ export function applyNakedPairs(grid: Cell[][]): { nakedPairs: number, appliedPa
             if (applied) appliedPairs++;
         }
     }
-    console.log(`${nakedPairs} naked pairs found, ${appliedPairs} applied.`);
     return { nakedPairs, appliedPairs };
 }
 
@@ -279,7 +269,6 @@ export function applyUniqueNotes(grid: Cell[][], pos: Coord, group: Group): bool
 
     if (uniqueNotes.length === 1) {
         const note = uniqueNotes[0];
-        console.log(`Naked single found at (${row},${col}), value: ${note}, unique in ${group}.`);
         cell.notes.clear();
         cell.notes.add(note);
         return true;
@@ -300,9 +289,7 @@ export function processNakedSingle(grid: Cell[][], pos: Coord): boolean {
     if (cell.value !== null) return false;
 
     if (cell.notes.size === 1) {
-        const note = cell.notes.values().next().value;
-        console.log(`Naked single found at (${row},${col}), value: ${note}, only note in cell.`);
-        return true; // Indicate that a naked single was found
+        return true;
     }
 
     return applyUniqueNotes(grid, pos, Group.Row)
@@ -324,7 +311,6 @@ export function processNakedSingles(grid: Cell[][]): number {
             }
         }
     }
-    console.log(`${nakedSingles} naked singles applied.`);
     return nakedSingles;
 }
 
