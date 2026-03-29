@@ -162,14 +162,14 @@
 
 		.difficulty-grid {
 			grid-template-columns: repeat(2, 1fr);
-			gap: 0.5rem;
+			gap: 0.75rem;
 			margin-bottom: 0.75rem;
 			width: 100%;
 		}
 
 		.difficulty-card {
 			flex-direction: row;
-			padding: 0.5rem;
+			padding: 0.75rem;
 			align-items: center;
 			justify-content: center;
 		}
@@ -205,6 +205,11 @@
 	@media (max-width: 480px) {
 		.difficulty-grid {
 			grid-template-columns: 1fr;
+			gap: 0.75rem;
+		}
+
+		.difficulty-card {
+			padding: 1rem;
 		}
 	}
 </style>
