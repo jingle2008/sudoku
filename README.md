@@ -24,3 +24,21 @@ The core Sudoku solving and puzzle generation logic is deduplicated and optimize
 
 - To modify or extend the core backtracking logic, update `bitmaskBacktrack` in `bitmaskSolver.ts`.
 - For property-based and randomized tests, see [`src/lib/sudoku/bitmaskSolver.test.ts`](src/lib/sudoku/bitmaskSolver.test.ts).
+
+### Deployment
+
+The app deploys to Cloudflare Pages automatically on push to `main` via GitHub Actions (after CI passes).
+
+**Setup:**
+
+1. Create a Cloudflare Pages project named `sudoku` (or update the `--project-name` in `.github/workflows/ci.yml`).
+2. Add these repository secrets in GitHub (Settings > Secrets and variables > Actions):
+   - `CLOUDFLARE_API_TOKEN` — Create an API token in the [Cloudflare dashboard](https://dash.cloudflare.com/profile/api-tokens) with the **Cloudflare Pages: Edit** permission.
+   - `CLOUDFLARE_ACCOUNT_ID` — Found on the Cloudflare dashboard overview page.
+
+**Manual deploy:**
+
+```bash
+npm run build
+npx wrangler pages deploy .svelte-kit/cloudflare --project-name=sudoku
+```
