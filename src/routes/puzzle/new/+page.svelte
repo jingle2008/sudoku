@@ -4,7 +4,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
 	import SolveLogPanel from '$lib/components/SolveLogPanel.svelte';
-	import { solveLogStore } from '$lib/stores/solveLogStore';
+	import { solveLogStore, highlightedCells } from '$lib/stores/solveLogStore';
 	import {
 		gameStore,
 		grid,
@@ -28,7 +28,12 @@
 		};
 	});
 
+	function isSolveHighlighted(row: number, col: number, cells: import('$lib/sudoku/coord').Coord[]): boolean {
+		return cells.some(c => c.row === row && c.col === col);
+	}
+
 	function handleCellClick(row: number, col: number) {
+		solveLogStore.clearSelection();
 		gameStore.selectCell(row, col);
 	}
 
@@ -74,10 +79,12 @@
 			case '7':
 			case '8':
 			case '9':
+				solveLogStore.clearSelection();
 				gameStore.setCellValue(parseInt(event.key));
 				return;
 			case 'Backspace':
 			case 'Delete':
+				solveLogStore.clearSelection();
 				gameStore.setCellValue(null);
 				return;
 			default:
@@ -128,11 +135,12 @@
 							class:initial={cell.isInitial}
 							class:highlighted={cell.isHighlighted}
 							class:flashing={cell.isFlashing}
+							class:solve-highlight={isSolveHighlighted(rowIndex, colIndex, $highlightedCells)}
 							role="button"
 							tabindex="0"
 							data-row={rowIndex}
 							data-col={colIndex}
-							on:click={() => gameStore.selectCell(rowIndex, colIndex)}
+							on:click={() => handleCellClick(rowIndex, colIndex)}
 							on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
 						>
 							{#if cell.value !== null}
@@ -325,6 +333,16 @@
 
 	.cell.selected.highlighted {
 		background-color: #bbdefb;
+	}
+
+	.cell.solve-highlight {
+		box-shadow: inset 0 0 0 2.5px #f0a030;
+		background-color: #fff8e1;
+	}
+
+	.cell.selected.solve-highlight {
+		background-color: #bbdefb;
+		box-shadow: inset 0 0 0 2.5px #f0a030;
 	}
 
 	.cell.flashing {
