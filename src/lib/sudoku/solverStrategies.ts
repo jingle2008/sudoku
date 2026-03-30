@@ -5,6 +5,28 @@
 import { BOX_SIZE, GRID_SIZE, Group } from "./constants";
 import { Coord } from "./coord";
 import type { Cell } from "$lib/sudoku/types";
+import { solveLogStore } from "$lib/stores/solveLogStore";
+import type { SolveStepType } from "./solveStep";
+
+/** Format a Coord as "R{row+1}C{col+1}" for human-readable descriptions */
+function fmtCoord(c: Coord): string {
+    return `R${c.row + 1}C${c.col + 1}`;
+}
+
+/** Format an array of Coords as a comma-separated string */
+function fmtCoords(coords: Coord[]): string {
+    return coords.map(fmtCoord).join(', ');
+}
+
+/** Format a set of numbers as "{1, 2, 3}" */
+function fmtSet(nums: Iterable<number>): string {
+    return `{${[...nums].sort((a, b) => a - b).join(', ')}}`;
+}
+
+/** Compute the 1-based box number from a Coord */
+function boxNumber(c: Coord): number {
+    return Math.floor(c.row / BOX_SIZE) * BOX_SIZE + Math.floor(c.col / BOX_SIZE) + 1;
+}
 
 /**
  * Removes notes from every *empty* cell in the supplied coordinates list.
@@ -42,7 +64,19 @@ export function removeNotesInRow(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Row, skips), notes);
+    const targets = anchor.coordsFor(Group.Row, skips);
+    const affected = targets.filter(({ row, col }) =>
+        grid[row][col].value === null && [...notes].some(n => grid[row][col].notes.has(n))
+    );
+    const removed = removeNotesFromCells(grid, targets, notes);
+    if (removed > 0) {
+        solveLogStore.addStep({
+            type: 'eliminateRow',
+            cells: affected,
+            values: [...notes],
+            description: `Row ${anchor.row + 1}: eliminated candidates ${fmtSet(notes)} from ${fmtCoords(affected)} (placed values in row)`
+        });
+    }
     return removed;
 }
 
@@ -60,7 +94,19 @@ export function removeNotesInColumn(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Column, skips), notes);
+    const targets = anchor.coordsFor(Group.Column, skips);
+    const affected = targets.filter(({ row, col }) =>
+        grid[row][col].value === null && [...notes].some(n => grid[row][col].notes.has(n))
+    );
+    const removed = removeNotesFromCells(grid, targets, notes);
+    if (removed > 0) {
+        solveLogStore.addStep({
+            type: 'eliminateCol',
+            cells: affected,
+            values: [...notes],
+            description: `Column ${anchor.col + 1}: eliminated candidates ${fmtSet(notes)} from ${fmtCoords(affected)} (placed values in column)`
+        });
+    }
     return removed;
 }
 
@@ -78,7 +124,19 @@ export function removeNotesInBox(
     skips: Coord[],
     notes: Set<number>
 ): number {
-    const removed = removeNotesFromCells(grid, anchor.coordsFor(Group.Box, skips), notes);
+    const targets = anchor.coordsFor(Group.Box, skips);
+    const affected = targets.filter(({ row, col }) =>
+        grid[row][col].value === null && [...notes].some(n => grid[row][col].notes.has(n))
+    );
+    const removed = removeNotesFromCells(grid, targets, notes);
+    if (removed > 0) {
+        solveLogStore.addStep({
+            type: 'eliminateBox',
+            cells: affected,
+            values: [...notes],
+            description: `Box ${boxNumber(anchor)}: eliminated candidates ${fmtSet(notes)} from ${fmtCoords(affected)} (placed values in box)`
+        });
+    }
     return removed;
 }
 
@@ -169,30 +227,88 @@ export function processNakedPairs(grid: Cell[][], pos: Coord): { found: boolean,
 
     let pairFound = false;
     let totalNotesRemoved = 0;
+    const pairValues = [...cell.notes].sort((a, b) => a - b);
+
     let pair = getNakedPairInRow(grid, pos);
     if (pair !== null) {
         pairFound = true;
         const cells = [pos, pair];
-        totalNotesRemoved += removeNotesInRow(grid, pos, cells, cell.notes);
+        const rowTargets = pos.coordsFor(Group.Row, cells);
+        const rowAffected = rowTargets.filter(({ row: r, col: c }) =>
+            grid[r][c].value === null && [...cell.notes].some(n => grid[r][c].notes.has(n))
+        );
+        const rowRemoved = removeNotesInRow(grid, pos, cells, cell.notes);
+        let boxRemoved = 0;
+        let boxAffected: Coord[] = [];
         if (areCellsInSameBox(cells)) {
-            totalNotesRemoved += removeNotesInBox(grid, pos, cells, cell.notes);
+            const boxTargets = pos.coordsFor(Group.Box, cells);
+            boxAffected = boxTargets.filter(({ row: r, col: c }) =>
+                grid[r][c].value === null && [...cell.notes].some(n => grid[r][c].notes.has(n))
+            );
+            boxRemoved = removeNotesInBox(grid, pos, cells, cell.notes);
         }
+        const allRemoved = rowRemoved + boxRemoved;
+        if (allRemoved > 0) {
+            const allAffected = [...rowAffected, ...boxAffected];
+            solveLogStore.addStep({
+                type: 'nakedPair',
+                cells: cells,
+                values: pairValues,
+                description: `Naked Pair [${pairValues.join(', ')}] in Row ${pos.row + 1} at ${fmtCoords(cells)} — removed ${fmtSet(cell.notes)} from ${fmtCoords(allAffected)}`
+            });
+        }
+        totalNotesRemoved += allRemoved;
     }
 
     pair = getNakedPairInColumn(grid, pos);
     if (pair !== null) {
         pairFound = true;
         const cells = [pos, pair];
-        totalNotesRemoved += removeNotesInColumn(grid, pos, cells, cell.notes);
+        const colTargets = pos.coordsFor(Group.Column, cells);
+        const colAffected = colTargets.filter(({ row: r, col: c }) =>
+            grid[r][c].value === null && [...cell.notes].some(n => grid[r][c].notes.has(n))
+        );
+        const colRemoved = removeNotesInColumn(grid, pos, cells, cell.notes);
+        let boxRemoved = 0;
+        let boxAffected: Coord[] = [];
         if (areCellsInSameBox(cells)) {
-            totalNotesRemoved += removeNotesInBox(grid, pos, cells, cell.notes);
+            const boxTargets = pos.coordsFor(Group.Box, cells);
+            boxAffected = boxTargets.filter(({ row: r, col: c }) =>
+                grid[r][c].value === null && [...cell.notes].some(n => grid[r][c].notes.has(n))
+            );
+            boxRemoved = removeNotesInBox(grid, pos, cells, cell.notes);
         }
+        const allRemoved = colRemoved + boxRemoved;
+        if (allRemoved > 0) {
+            const allAffected = [...colAffected, ...boxAffected];
+            solveLogStore.addStep({
+                type: 'nakedPair',
+                cells: cells,
+                values: pairValues,
+                description: `Naked Pair [${pairValues.join(', ')}] in Column ${pos.col + 1} at ${fmtCoords(cells)} — removed ${fmtSet(cell.notes)} from ${fmtCoords(allAffected)}`
+            });
+        }
+        totalNotesRemoved += allRemoved;
     }
 
     pair = getNakedPairInBox(grid, pos);
     if (pair !== null) {
         pairFound = true;
-        totalNotesRemoved += removeNotesInBox(grid, pos, [pos, pair], cell.notes);
+        const pairCells = [pos, pair];
+        const boxTargets = pos.coordsFor(Group.Box, pairCells);
+        const boxAffected = boxTargets.filter(({ row: r, col: c }) =>
+            grid[r][c].value === null && [...cell.notes].some(n => grid[r][c].notes.has(n))
+        );
+        const boxRemoved = removeNotesInBox(grid, pos, pairCells, cell.notes);
+        if (boxRemoved > 0) {
+            solveLogStore.addStep({
+                type: 'nakedPair',
+                cells: pairCells,
+                values: pairValues,
+                description: `Naked Pair [${pairValues.join(', ')}] in Box ${boxNumber(pos)} at ${fmtCoords(pairCells)} — removed ${fmtSet(cell.notes)} from ${fmtCoords(boxAffected)}`
+            });
+        }
+        totalNotesRemoved += boxRemoved;
     }
 
     return { found: pairFound, applied: totalNotesRemoved > 0 };
@@ -269,8 +385,19 @@ export function applyUniqueNotes(grid: Cell[][], pos: Coord, group: Group): bool
 
     if (uniqueNotes.length === 1) {
         const note = uniqueNotes[0];
+        const groupLabel = group === Group.Row
+            ? `Row ${row + 1}`
+            : group === Group.Column
+                ? `Column ${col + 1}`
+                : `Box ${boxNumber(pos)}`;
         cell.notes.clear();
         cell.notes.add(note);
+        solveLogStore.addStep({
+            type: 'uniqueNote',
+            cells: [pos],
+            values: [note],
+            description: `Hidden Single: ${fmtCoord(pos)} = ${note} (unique in ${groupLabel})`
+        });
         return true;
     }
 
@@ -289,6 +416,13 @@ export function processNakedSingle(grid: Cell[][], pos: Coord): boolean {
     if (cell.value !== null) return false;
 
     if (cell.notes.size === 1) {
+        const value = [...cell.notes][0];
+        solveLogStore.addStep({
+            type: 'nakedSingle',
+            cells: [pos],
+            values: [value],
+            description: `Naked Single: ${fmtCoord(pos)} = ${value} (only candidate remaining)`
+        });
         return true;
     }
 
