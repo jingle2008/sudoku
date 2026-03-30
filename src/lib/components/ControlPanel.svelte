@@ -361,8 +361,14 @@
 	}
 
 	.number-pad {
-		grid-template-columns: repeat(5, 1fr);
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
 		gap: 0.4rem;
+	}
+
+	.number-pad button {
+		width: calc(20% - 0.4rem);
 	}
 
 	.number-pad button {
@@ -388,8 +394,11 @@
 	}
 
 	.number-pad {
-		grid-template-columns: repeat(5, 1fr);
 		gap: 0.25rem;
+	}
+
+	.number-pad button {
+		width: calc(20% - 0.25rem);
 	}
 
 	.number-pad button {
