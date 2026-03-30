@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { solveLogStore, stepCount } from '$lib/stores/solveLogStore';
+	import { solveLogStore, stepCount, selectedStepIndex } from '$lib/stores/solveLogStore';
 
 	let expanded = false;
 
@@ -9,6 +9,14 @@
 
 	function clearLog() {
 		solveLogStore.clear();
+	}
+
+	function handleStepClick(index: number) {
+		solveLogStore.selectStep(index);
+	}
+
+	function handleClearSelection() {
+		solveLogStore.clearSelection();
 	}
 </script>
 
@@ -20,18 +28,27 @@
 
 	{#if expanded}
 		<div class="log-body">
-			{#if $solveLogStore.length === 0}
+			{#if $solveLogStore.steps.length === 0}
 				<div class="log-empty">No steps recorded yet. Use the solver buttons above to see the log.</div>
 			{:else}
 				<div class="log-list">
-					{#each $solveLogStore as step, i (i)}
-						<div class="log-entry">
+					{#each $solveLogStore.steps as step, i (i)}
+						<button
+							class="log-entry"
+							class:step-selected={$selectedStepIndex === i}
+							on:click={() => handleStepClick(i)}
+						>
 							<span class="step-number">{i + 1}.</span>
 							<span class="step-description">{step.description}</span>
-						</div>
+						</button>
 					{/each}
 				</div>
-				<button class="clear-button" on:click={clearLog}>Clear Log</button>
+				<div class="log-actions">
+					{#if $selectedStepIndex !== null}
+						<button class="clear-selection-button" on:click={handleClearSelection}>Clear Selection</button>
+					{/if}
+					<button class="clear-button" on:click={clearLog}>Clear Log</button>
+				</div>
 			{/if}
 		</div>
 	{/if}
@@ -98,6 +115,19 @@
 		font-size: 0.85rem;
 		line-height: 1.4;
 		border: 1px solid #e9ecef;
+		cursor: pointer;
+		text-align: left;
+		width: 100%;
+		transition: background-color 0.15s ease;
+	}
+
+	.log-entry:hover {
+		background: #eef3ff;
+	}
+
+	.log-entry.step-selected {
+		background: #d0e4ff;
+		border-color: #90b8f8;
 	}
 
 	.step-number {
@@ -115,8 +145,13 @@
 		word-break: break-word;
 	}
 
-	.clear-button {
+	.log-actions {
+		display: flex;
+		gap: 0.5rem;
 		margin-top: 0.5rem;
+	}
+
+	.clear-button {
 		padding: 0.4rem 0.8rem;
 		background: #6c757d;
 		color: white;
@@ -129,6 +164,21 @@
 
 	.clear-button:hover {
 		background: #5a6268;
+	}
+
+	.clear-selection-button {
+		padding: 0.4rem 0.8rem;
+		background: #e9ecef;
+		color: #495057;
+		border: 1px solid #ced4da;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	.clear-selection-button:hover {
+		background: #dee2e6;
 	}
 
 	@media (max-width: 768px) {
