@@ -10,6 +10,7 @@ import {
 } from '$lib/sudoku/solverStrategies';
 
 import type { Cell } from '$lib/sudoku/types';
+import { solveLogStore } from './solveLogStore';
 
 import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
 import { snapshotState, restoreSnapshot, type HistoryState, initialHistoryState } from './historyStore';
@@ -268,6 +269,7 @@ function createGameStore() {
 
 		selectCell: (row: number, col: number) =>
 			update((state) => {
+				solveLogStore.clearSelection();
 				if (state.selectedCell.row === row && state.selectedCell.col === col) {
 					return state;
 				}
@@ -332,6 +334,7 @@ function createGameStore() {
 
 		setCellValue: (value: number | null) =>
 			update((state) => {
+				solveLogStore.clearSelection();
 				const { row, col } = state.selectedCell;
 				if (state.grid[row][col].isInitial) return state;
 
