@@ -52,7 +52,11 @@
 	<div class="number-grid" role="group" aria-label="Number selection">
 		<div class="number-pad">
 			{#each Array(9) as unused, i (i)}
-				<button on:click={() => gameStore.setCellValue(i + 1)} aria-label={`Set number ${i + 1}`}>
+				<button
+					class="num-{i + 1}"
+					on:click={() => gameStore.setCellValue(i + 1)}
+					aria-label={`Set number ${i + 1}`}
+				>
 					{i + 1}
 				</button>
 			{/each}
@@ -361,20 +365,20 @@
 	}
 
 	.number-pad {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
+		display: grid;
+		grid-template-columns: repeat(10, 1fr);
 		gap: 0.4rem;
 	}
 
 	.number-pad button {
-		width: calc(20% - 0.4rem);
-	}
-
-	.number-pad button {
+		grid-column: span 2;
 		aspect-ratio: auto;
 		min-height: 48px;
 		font-size: 1.5rem;
+	}
+
+	.number-pad button.num-6 {
+		grid-column: 2 / span 2;
 	}
 
 	.action-row {
@@ -395,10 +399,6 @@
 
 	.number-pad {
 		gap: 0.25rem;
-	}
-
-	.number-pad button {
-		width: calc(20% - 0.25rem);
 	}
 
 	.number-pad button {

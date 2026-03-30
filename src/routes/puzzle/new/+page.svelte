@@ -401,6 +401,7 @@
 		.game-container {
 			justify-content: flex-start;
 			padding: 0.5rem;
+			padding-bottom: env(safe-area-inset-bottom, 2rem);
 			gap: 0.5rem;
 		}
 
