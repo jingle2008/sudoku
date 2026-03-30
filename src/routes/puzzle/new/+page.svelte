@@ -10,10 +10,13 @@
 		grid,
 		isGameStarted,
 		formattedTime,
+		canUndo,
+		canRedo,
 		type Difficulty
 	} from '$lib/stores/gameStore';
 
 	let showRestartConfirm = false;
+	let showShortcuts = false;
 	let currentDifficulty = 'medium';
 
 	// Get difficulty from URL parameter
@@ -47,27 +50,53 @@
 		// Don't handle keyboard events when dialog is open
 		if (showRestartConfirm) return;
 
-		// Handle navigation
+		const isMod = event.ctrlKey || event.metaKey;
+
+		// Undo: Ctrl+Z / Cmd+Z
+		if (isMod && !event.shiftKey && event.key === 'z') {
+			event.preventDefault();
+			if ($canUndo) gameStore.undo();
+			return;
+		}
+
+		// Redo: Ctrl+Shift+Z / Cmd+Shift+Z
+		if (isMod && event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+			event.preventDefault();
+			if ($canRedo) gameStore.redo();
+			return;
+		}
+
+		// Toggle shortcut help
+		if (event.key === '?') {
+			showShortcuts = !showShortcuts;
+			return;
+		}
+
 		switch (event.key) {
 			case 'p':
+			case 'n':
 				if ($isGameStarted) {
 					gameStore.togglePencilMode();
 				}
 				return;
 			case 'ArrowUp':
 			case 'k':
+				event.preventDefault();
 				gameStore.moveSelection('up');
 				return;
 			case 'ArrowDown':
 			case 'j':
+				event.preventDefault();
 				gameStore.moveSelection('down');
 				return;
 			case 'ArrowLeft':
 			case 'h':
+				event.preventDefault();
 				gameStore.moveSelection('left');
 				return;
 			case 'ArrowRight':
 			case 'l':
+				event.preventDefault();
 				gameStore.moveSelection('right');
 				return;
 			case '1':
@@ -121,6 +150,29 @@
 			<span class="timer-value">{$formattedTime}</span>
 		</div>
 	</div>
+
+	<button class="shortcuts-toggle" on:click={() => (showShortcuts = !showShortcuts)} title="Keyboard shortcuts (?)">
+		?
+	</button>
+
+	{#if showShortcuts}
+		<div class="shortcuts-panel" role="dialog" aria-label="Keyboard shortcuts">
+			<div class="shortcuts-header">
+				<strong>Keyboard Shortcuts</strong>
+				<button class="shortcuts-close" on:click={() => (showShortcuts = false)}>&times;</button>
+			</div>
+			<dl class="shortcuts-list">
+				<div><dt>1-9</dt><dd>Set cell value / toggle note</dd></div>
+				<div><dt>Arrow keys</dt><dd>Navigate cells</dd></div>
+				<div><dt>N / P</dt><dd>Toggle pencil mode</dd></div>
+				<div><dt>Delete / Backspace</dt><dd>Clear cell</dd></div>
+				<div><dt>Ctrl+Z</dt><dd>Undo</dd></div>
+				<div><dt>Ctrl+Shift+Z</dt><dd>Redo</dd></div>
+				<div><dt>H/J/K/L</dt><dd>Vim-style navigation</dd></div>
+				<div><dt>?</dt><dd>Toggle this help</dd></div>
+			</dl>
+		</div>
+	{/if}
 
 	<div class="game-content">
 		<div class="grid">
@@ -395,6 +447,82 @@
 
 	.grid {
 		max-width: calc(100vw - 1.5rem);
+	}
+
+	.shortcuts-toggle {
+		position: fixed;
+		bottom: 1rem;
+		right: 1rem;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border: 1px solid var(--border-color);
+		background: white;
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--secondary-color);
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.shortcuts-toggle:hover {
+		background: #f0f0f0;
+	}
+
+	.shortcuts-panel {
+		background: white;
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		width: 100%;
+		max-width: 340px;
+		font-size: 0.85rem;
+	}
+
+	.shortcuts-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.shortcuts-close {
+		background: none;
+		border: none;
+		font-size: 1.2rem;
+		cursor: pointer;
+		color: #666;
+		padding: 0 0.25rem;
+	}
+
+	.shortcuts-list {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.shortcuts-list div {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.shortcuts-list dt {
+		font-weight: 600;
+		min-width: 120px;
+		color: var(--secondary-color);
+		font-family: monospace;
+		font-size: 0.8rem;
+	}
+
+	.shortcuts-list dd {
+		margin: 0;
+		color: #555;
 	}
 
 	@media (max-width: 768px) {
