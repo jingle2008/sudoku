@@ -10,6 +10,8 @@ import {
 } from '$lib/sudoku/solverStrategies';
 
 import type { Cell } from '$lib/sudoku/types';
+import type { Grid } from '$lib/sudoku/engine';
+import type { PuzzleWorkerRequest, PuzzleWorkerResponse } from '$lib/workers/puzzleWorker';
 import { solveLogStore } from './solveLogStore';
 
 import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
@@ -59,6 +61,7 @@ function createGameStore() {
 		selectedCell: new Coord(0, 0),
 		isPencilMode: false,
 		isGameStarted: false,
+		isGenerating: false,
 		...initialHistoryState,
 		difficulty: 'medium' as Difficulty,
 		initialGrid: [] as (number | null)[][],
@@ -193,38 +196,73 @@ function createGameStore() {
 		subscribe,
 
 		startGame: (difficulty: Difficulty = 'medium') => {
-			const puzzle = generateSudokuPuzzle(difficulty);
-			const initialGrid = puzzle.map((row) => [...row]);
+			function applyPuzzle(puzzle: Grid) {
+				const initialGrid = puzzle.map((row) => [...row]);
 
-			const newGrid = createInitialGrid();
-			for (let row = 0; row < GRID_SIZE; row++) {
-				for (let col = 0; col < GRID_SIZE; col++) {
-					if (puzzle[row][col] !== null) {
-						newGrid[row][col].value = puzzle[row][col];
-						newGrid[row][col].isInitial = true;
+				const newGrid = createInitialGrid();
+				for (let row = 0; row < GRID_SIZE; row++) {
+					for (let col = 0; col < GRID_SIZE; col++) {
+						if (puzzle[row][col] !== null) {
+							newGrid[row][col].value = puzzle[row][col];
+							newGrid[row][col].isInitial = true;
+						}
 					}
 				}
+
+				const timer = startTimer(update);
+
+				update((state) => {
+					const firstEmptyCell = findFirstEmptyCell(newGrid);
+					newGrid[firstEmptyCell.row][firstEmptyCell.col].isSelected = true;
+
+					return {
+						...state,
+						grid: newGrid,
+						initialGrid,
+						isGameStarted: true,
+						isGenerating: false,
+						difficulty,
+						isComplete: false,
+						startTime: timer.startTime,
+						elapsedTime: 0,
+						timerInterval: timer.timerInterval,
+						selectedCell: firstEmptyCell
+					};
+				});
 			}
 
-			const timer = startTimer(update);
+			// Try to use a Web Worker for puzzle generation
+			if (typeof Worker !== 'undefined') {
+				update((state) => ({ ...state, isGenerating: true, difficulty }));
 
-			update((state) => {
-				const firstEmptyCell = findFirstEmptyCell(newGrid);
-				newGrid[firstEmptyCell.row][firstEmptyCell.col].isSelected = true;
+				try {
+					const worker = new Worker(
+						new URL('$lib/workers/puzzleWorker.ts', import.meta.url),
+						{ type: 'module' }
+					);
 
-				return {
-					...state,
-					grid: newGrid,
-					initialGrid,
-					isGameStarted: true,
-					difficulty,
-					isComplete: false,
-					startTime: timer.startTime,
-					elapsedTime: 0,
-					timerInterval: timer.timerInterval,
-					selectedCell: firstEmptyCell
-				};
-			});
+					worker.onmessage = (event: MessageEvent<PuzzleWorkerResponse>) => {
+						if (event.data.type === 'result') {
+							applyPuzzle(event.data.puzzle);
+							worker.terminate();
+						}
+					};
+
+					worker.onerror = () => {
+						// Fallback to synchronous generation on worker error
+						worker.terminate();
+						applyPuzzle(generateSudokuPuzzle(difficulty));
+					};
+
+					worker.postMessage({ type: 'generate', difficulty } satisfies PuzzleWorkerRequest);
+				} catch {
+					// Fallback to synchronous generation if worker creation fails
+					applyPuzzle(generateSudokuPuzzle(difficulty));
+				}
+			} else {
+				// No Web Worker support - generate synchronously
+				applyPuzzle(generateSudokuPuzzle(difficulty));
+			}
 		},
 
 		restartGame: () => {
@@ -485,6 +523,7 @@ function createGameStore() {
 					selectedCell: new Coord(0, 0),
 					isPencilMode: false,
 					isGameStarted: false,
+					isGenerating: false,
 					isAuthoring: false,
 					...initialHistoryState,
 					difficulty: 'medium',
@@ -534,6 +573,7 @@ export const selectedCell = derived(gameStore, ($gameStore) => $gameStore.select
 export const grid = derived(gameStore, ($gameStore) => $gameStore.grid);
 export const isPencilMode = derived(gameStore, ($gameStore) => $gameStore.isPencilMode);
 export const isGameStarted = derived(gameStore, ($gameStore) => $gameStore.isGameStarted);
+export const isGenerating = derived(gameStore, ($gameStore) => $gameStore.isGenerating);
 export const canUndo = derived(gameStore, ($gameStore) => $gameStore.undoStack.length > 0);
 export const canRedo = derived(gameStore, ($gameStore) => $gameStore.redoStack.length > 0);
 export const canDelete = derived(

@@ -9,6 +9,7 @@
 		gameStore,
 		grid,
 		isGameStarted,
+		isGenerating,
 		formattedTime,
 		canUndo,
 		canRedo,
@@ -175,7 +176,13 @@
 	{/if}
 
 	<div class="game-content">
-		<div class="grid">
+		{#if $isGenerating}
+			<div class="loading-overlay">
+				<div class="spinner"></div>
+				<p>Generating puzzle...</p>
+			</div>
+		{/if}
+		<div class="grid" class:generating={$isGenerating}>
 			{#each $gameStore.grid as row, rowIndex (rowIndex)}
 				<div class="row">
 					{#each row as cell, colIndex (colIndex)}
@@ -447,6 +454,40 @@
 
 	.grid {
 		max-width: calc(100vw - 1.5rem);
+	}
+
+	.grid.generating {
+		opacity: 0.3;
+		pointer-events: none;
+	}
+
+	.loading-overlay {
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		z-index: 5;
+		padding-top: 8rem;
+	}
+
+	.loading-overlay p {
+		font-size: 0.95rem;
+		color: var(--secondary-color);
+		font-weight: 500;
+	}
+
+	.spinner {
+		width: 36px;
+		height: 36px;
+		border: 3px solid var(--border-color);
+		border-top-color: var(--primary-color);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	.shortcuts-toggle {
