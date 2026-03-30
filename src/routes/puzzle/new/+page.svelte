@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
+	import SolveLogPanel from '$lib/components/SolveLogPanel.svelte';
+	import { solveLogStore } from '$lib/stores/solveLogStore';
 	import {
 		gameStore,
 		grid,
@@ -18,6 +20,7 @@
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
 		currentDifficulty = urlParams.get('difficulty') || 'medium';
+		solveLogStore.clear();
 		gameStore.startGame(currentDifficulty as Difficulty);
 		window.addEventListener('keydown', handleKeyDown);
 		return () => {
@@ -83,6 +86,7 @@
 	}
 
 	function confirmRestart() {
+		solveLogStore.clear();
 		gameStore.restartGame();
 		showRestartConfirm = false;
 	}
@@ -152,6 +156,8 @@
 			<ControlPanel />
 		</div>
 	</div>
+
+	<SolveLogPanel />
 
 	<ConfirmDialog
 		isOpen={showRestartConfirm}
