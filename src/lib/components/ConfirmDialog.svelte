@@ -16,9 +16,23 @@
 		dialogElement.focus();
 	}
 
+	$: if (!isOpen && dialogElement?.open) {
+		dialogElement.close();
+	}
+
+	function handleCancel() {
+		if (dialogElement?.open) dialogElement.close();
+		onCancel();
+	}
+
+	function handleConfirm() {
+		if (dialogElement?.open) dialogElement.close();
+		onConfirm();
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
-			onCancel();
+			handleCancel();
 		}
 		// Stop propagation of all keyboard events
 		event.stopPropagation();
@@ -29,7 +43,7 @@
 	<dialog
 		bind:this={dialogElement}
 		class="modal-overlay"
-		on:click={onCancel}
+		on:click={handleCancel}
 		on:keydown|stopPropagation={handleKeyDown}
 		aria-modal="true"
 		aria-labelledby="dialog-title"
@@ -38,12 +52,13 @@
 		<div
 			class="modal"
 			role="document"
+			on:click|stopPropagation
 		>
 			<h2 id="dialog-title">{title}</h2>
 			<p id="dialog-message">{message}</p>
 			<div class="modal-buttons">
-				<button class="cancel" on:click={onCancel} aria-label="Cancel">{cancelText}</button>
-				<button class="confirm" on:click={onConfirm} aria-label="Confirm">{confirmText}</button>
+				<button class="cancel" on:click={handleCancel} aria-label="Cancel">{cancelText}</button>
+				<button class="confirm" on:click={handleConfirm} aria-label="Confirm">{confirmText}</button>
 			</div>
 		</div>
 	</dialog>
