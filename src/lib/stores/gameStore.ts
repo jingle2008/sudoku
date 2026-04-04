@@ -206,6 +206,12 @@ function createGameStore() {
 		subscribe,
 
 		startGame: (difficulty: Difficulty = 'medium') => {
+			// Stop any existing timer before starting a new game (prevents timer leak)
+			update((state) => {
+				stopTimer(state.timerInterval);
+				return { ...state, timerInterval: null };
+			});
+
 			function applyPuzzle(puzzle: Grid) {
 				const initialGrid = puzzle.map((row) => [...row]);
 
