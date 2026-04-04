@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import {
 		gameStore,
 		isPencilMode,
@@ -15,10 +16,68 @@
 
 	let solverToolsOpen = false;
 	let selectedNumber: number | null = null;
+	let longPressHintDismissed = false;
+	let longPressActiveBtn: number | null = null;
+	let longPressFiredBtn: number | null = null;
+
+	// Long press state
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	const LONG_PRESS_MS = 500;
+
+	onMount(() => {
+		longPressHintDismissed = localStorage.getItem('sudoku-longpress-hint-dismissed') === 'true';
+	});
 
 	function handleNumberClick(num: number) {
 		selectedNumber = num;
 		gameStore.setCellValue(num);
+	}
+
+	function handleLongPress(num: number) {
+		longPressFiredBtn = num;
+		selectedNumber = num;
+		gameStore.toggleNote(num);
+
+		// Dismiss hint on first long press
+		if (!longPressHintDismissed) {
+			longPressHintDismissed = true;
+			localStorage.setItem('sudoku-longpress-hint-dismissed', 'true');
+		}
+	}
+
+	function onTouchStart(num: number, event: TouchEvent) {
+		longPressActiveBtn = num;
+		longPressFiredBtn = null;
+		longPressTimer = setTimeout(() => {
+			handleLongPress(num);
+			longPressActiveBtn = null;
+		}, LONG_PRESS_MS);
+	}
+
+	function onTouchEnd(num: number, event: TouchEvent) {
+		if (longPressTimer !== null) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+		// If long press already fired, prevent the click
+		if (longPressFiredBtn === num) {
+			event.preventDefault();
+			longPressFiredBtn = null;
+		}
+		longPressActiveBtn = null;
+	}
+
+	function onTouchCancel() {
+		if (longPressTimer !== null) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+		longPressActiveBtn = null;
+		longPressFiredBtn = null;
+	}
+
+	function onContextMenu(event: Event) {
+		event.preventDefault();
 	}
 
 	// Keyboard shortcuts for control panel
@@ -70,14 +129,33 @@
 			<button
 				class="num-btn"
 				class:num-selected={selectedNumber === i + 1}
+				class:long-press-active={longPressActiveBtn === i + 1}
+				class:long-press-fired={longPressFiredBtn === i + 1}
 				on:click={() => handleNumberClick(i + 1)}
+				on:touchstart|passive={(e) => onTouchStart(i + 1, e)}
+				on:touchend={(e) => onTouchEnd(i + 1, e)}
+				on:touchcancel={onTouchCancel}
+				on:contextmenu={onContextMenu}
 				disabled={!$isGameStarted}
 				aria-label={`Set number ${i + 1}`}
 			>
 				{i + 1}
+				{#if longPressFiredBtn === i + 1}
+					<span class="pencil-flash">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+					</span>
+				{/if}
 			</button>
 		{/each}
 	</div>
+
+	<!-- Long press hint -->
+	{#if !longPressHintDismissed && $isGameStarted}
+		<div class="longpress-hint">
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+			Long press for notes
+		</div>
+	{/if}
 
 	<!-- Action Buttons -->
 	<div class="action-buttons">
@@ -280,6 +358,7 @@
 	touch-action: manipulation;
 	-webkit-tap-highlight-color: transparent;
 	transition: all 0.12s ease;
+	position: relative;
 }
 
 .num-btn:hover:not(:disabled) {
@@ -300,6 +379,51 @@
 .num-btn:disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
+}
+
+/* Long press visual feedback */
+.num-btn.long-press-active {
+	transform: scale(0.90);
+	transition: transform 0.3s ease;
+}
+
+.num-btn.long-press-fired {
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Pencil icon flash on long press */
+.pencil-flash {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	color: var(--primary-color);
+	animation: pencil-flash-anim 0.6s ease-out forwards;
+	pointer-events: none;
+}
+
+@keyframes pencil-flash-anim {
+	0% { opacity: 1; transform: scale(1.2); }
+	100% { opacity: 0; transform: scale(0.8); }
+}
+
+/* Long press hint */
+.longpress-hint {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	font-size: 12px;
+	color: var(--text-secondary);
+	padding: var(--space-1) var(--space-2);
+	background: var(--surface-secondary);
+	border-radius: var(--radius);
+	animation: hint-fade-in 0.3s ease;
+}
+
+@keyframes hint-fade-in {
+	from { opacity: 0; transform: translateY(-4px); }
+	to { opacity: 1; transform: translateY(0); }
 }
 
 /* Action buttons */

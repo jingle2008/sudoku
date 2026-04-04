@@ -26,6 +26,43 @@
 	let showShortcuts = false;
 	let currentDifficulty = 'medium';
 
+	// Long press on grid cell to temporarily toggle pencil mode
+	let cellLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let cellLongPressFired = false;
+	const CELL_LONG_PRESS_MS = 500;
+
+	function onCellTouchStart(row: number, col: number) {
+		cellLongPressFired = false;
+		cellLongPressTimer = setTimeout(() => {
+			cellLongPressFired = true;
+			gameStore.selectCell(row, col);
+			gameStore.togglePencilMode();
+		}, CELL_LONG_PRESS_MS);
+	}
+
+	function onCellTouchEnd(event: TouchEvent) {
+		if (cellLongPressTimer !== null) {
+			clearTimeout(cellLongPressTimer);
+			cellLongPressTimer = null;
+		}
+		if (cellLongPressFired) {
+			event.preventDefault();
+			cellLongPressFired = false;
+		}
+	}
+
+	function onCellTouchCancel() {
+		if (cellLongPressTimer !== null) {
+			clearTimeout(cellLongPressTimer);
+			cellLongPressTimer = null;
+		}
+		cellLongPressFired = false;
+	}
+
+	function onCellContextMenu(event: Event) {
+		event.preventDefault();
+	}
+
 	// Get difficulty from URL parameter
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
@@ -224,6 +261,10 @@
 							data-col={colIndex}
 							on:click={() => handleCellClick(rowIndex, colIndex)}
 							on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
+							on:touchstart|passive={() => onCellTouchStart(rowIndex, colIndex)}
+							on:touchend={onCellTouchEnd}
+							on:touchcancel={onCellTouchCancel}
+							on:contextmenu={onCellContextMenu}
 						>
 							{#if cell.value !== null}
 								<span class="value">{cell.value}</span>

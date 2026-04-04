@@ -395,6 +395,24 @@ function createGameStore() {
 				};
 			}),
 
+		toggleNote: (value: number) =>
+			update((state) => {
+				solveLogStore.clearSelection();
+				const { row, col } = state.selectedCell;
+				if (state.grid[row][col].isInitial) return state;
+
+				const currentSnapshot = snapshotState(state);
+				const newState = { ...state };
+
+				handlePencilMode(newState, state.selectedCell, value);
+
+				return {
+					...newState,
+					undoStack: [...state.undoStack, currentSnapshot],
+					redoStack: []
+				};
+			}),
+
 		moveSelection: (direction: 'up' | 'down' | 'left' | 'right') =>
 			update((state) => {
 				const { row, col } = state.selectedCell;
