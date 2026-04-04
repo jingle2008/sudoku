@@ -78,6 +78,7 @@
 			window.removeEventListener('keydown', handleKeyDown);
 			// Record abandoned game when navigating away
 			gameStore.recordAbandoned();
+			gameStore.resetGame();
 		};
 	});
 
