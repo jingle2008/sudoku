@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 </script>
 
 <div class="home-container">
+	<div class="theme-toggle-wrapper">
+		<ThemeToggle />
+	</div>
 	<div class="title-container">
 		<h1>Sudoku</h1>
 		<p class="subtitle">Challenge your mind with our Sudoku puzzles</p>
@@ -102,6 +106,12 @@
 
 	.secondary-btn:active {
 		transform: scale(0.98);
+	}
+
+	.theme-toggle-wrapper {
+		position: absolute;
+		top: var(--space-4);
+		right: var(--space-4);
 	}
 
 	@media (max-width: 768px) {

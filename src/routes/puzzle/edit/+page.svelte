@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import {
 		gameStore,
 		grid,
@@ -113,9 +114,12 @@
 		<div class="mode-badge">
 			Edit Mode
 		</div>
-		<div class="timer">
-			<span class="timer-icon">⏱️</span>
-			<span class="timer-value">{$formattedTime}</span>
+		<div class="header-right">
+			<div class="timer">
+				<span class="timer-icon">⏱️</span>
+				<span class="timer-value">{$formattedTime}</span>
+			</div>
+			<ThemeToggle />
 		</div>
 	</div>
 
@@ -236,6 +240,12 @@
 		color: white;
 		border-radius: 20px;
 		font-size: 14px;
+	}
+
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
 	}
 
 	.timer {

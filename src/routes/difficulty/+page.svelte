@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
@@ -18,6 +19,9 @@
 </script>
 
 <div class="difficulty-container">
+	<div class="theme-toggle-wrapper">
+		<ThemeToggle />
+	</div>
 	<h1>Select Difficulty</h1>
 
 	<div class="difficulty-grid">
@@ -120,6 +124,12 @@
 
 	.back-button:active {
 		transform: scale(0.98);
+	}
+
+	.theme-toggle-wrapper {
+		position: absolute;
+		top: var(--space-4);
+		right: var(--space-4);
 	}
 
 	@media (max-width: 768px) {
