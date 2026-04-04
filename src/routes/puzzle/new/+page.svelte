@@ -4,6 +4,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
 	import SolveLogPanel from '$lib/components/SolveLogPanel.svelte';
+	import MoveHistoryPanel from '$lib/components/MoveHistoryPanel.svelte';
 	import { solveLogStore, highlightedCells } from '$lib/stores/solveLogStore';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import {
@@ -289,6 +290,7 @@
 	</div>
 
 	<SolveLogPanel />
+	<MoveHistoryPanel />
 
 	<ConfirmDialog
 		isOpen={showRestartConfirm}

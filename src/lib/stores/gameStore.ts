@@ -16,7 +16,7 @@ import { solveLogStore } from './solveLogStore';
 import { statsStore } from './statsStore';
 
 import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
-import { snapshotState, restoreSnapshot, type HistoryState, initialHistoryState } from './historyStore';
+import { snapshotState, restoreSnapshot, type HistoryState, type MoveLogEntry, initialHistoryState } from './historyStore';
 
 export type GameState = {
 	grid: Cell[][];
@@ -166,32 +166,39 @@ function createGameStore() {
 		update(state => ({ ...state, flashTimeout }));
 	}
 
-	function handlePencilMode(state: GameState, pos: Coord, value: number | null) {
+	function handlePencilMode(state: GameState, pos: Coord, value: number | null): string | null {
 		const { row, col } = pos;
 		if (value !== null) {
 			if (hasConflict(state.grid, pos, value)) {
 				flashConflictingCells(state.grid, pos, value);
-				return;
+				return null;
 			}
 			const notes = state.grid[row][col].notes;
-			notes.has(value) ? notes.delete(value) : notes.add(value);
+			const added = !notes.has(value);
+			added ? notes.add(value) : notes.delete(value);
+			return added
+				? `Note R${row + 1}C${col + 1} + {${value}}`
+				: `Note R${row + 1}C${col + 1} - {${value}}`;
 		} else {
 			state.grid[row][col].notes.clear();
+			return `Clear notes R${row + 1}C${col + 1}`;
 		}
 	}
 
-	function handlePenMode(state: GameState, pos: Coord, value: number | null) {
+	function handlePenMode(state: GameState, pos: Coord, value: number | null): string | null {
 		const { row, col } = pos;
 		if (value !== null) {
 			if (hasConflict(state.grid, pos, value)) {
 				flashConflictingCells(state.grid, pos, value);
-				return;
+				return null;
 			}
 			state.grid[row][col].value = value;
 			state.grid[row][col].notes.clear();
 			removeMatchingNotes(state.grid, pos, value);
+			return `Set R${row + 1}C${col + 1} = ${value}`;
 		} else {
 			state.grid[row][col].value = null;
+			return `Delete R${row + 1}C${col + 1}`;
 		}
 	}
 
@@ -349,11 +356,15 @@ function createGameStore() {
 				const previousState = state.undoStack[state.undoStack.length - 1];
 				const restored = restoreSnapshot(previousState);
 
+				const lastMove = state.moveLog[state.moveLog.length - 1];
+
 				return {
 					...state,
 					...restored,
 					undoStack: state.undoStack.slice(0, -1),
-					redoStack: [...state.redoStack, currentSnapshot]
+					redoStack: [...state.redoStack, currentSnapshot],
+					moveLog: state.moveLog.slice(0, -1),
+					redoMoveLog: lastMove ? [...state.redoMoveLog, lastMove] : state.redoMoveLog
 				};
 			}),
 
@@ -365,11 +376,49 @@ function createGameStore() {
 				const nextState = state.redoStack[state.redoStack.length - 1];
 				const restored = restoreSnapshot(nextState);
 
+				const redoMove = state.redoMoveLog[state.redoMoveLog.length - 1];
+
 				return {
 					...state,
 					...restored,
 					undoStack: [...state.undoStack, currentSnapshot],
-					redoStack: state.redoStack.slice(0, -1)
+					redoStack: state.redoStack.slice(0, -1),
+					moveLog: redoMove ? [...state.moveLog, redoMove] : state.moveLog,
+					redoMoveLog: state.redoMoveLog.slice(0, -1)
+				};
+			}),
+
+		undoToStep: (stepIndex: number) =>
+			update((state) => {
+				const numUndos = state.moveLog.length - 1 - stepIndex;
+				if (numUndos <= 0) return state;
+
+				const newUndoStack = [...state.undoStack];
+				const newRedoStack = [...state.redoStack];
+				const newMoveLog = [...state.moveLog];
+				const newRedoMoveLog = [...state.redoMoveLog];
+
+				let currentGrid = state.grid;
+				let currentSelectedCell = state.selectedCell;
+
+				for (let i = 0; i < numUndos; i++) {
+					newRedoStack.push(snapshotState({ grid: currentGrid, selectedCell: currentSelectedCell }));
+					newRedoMoveLog.push(newMoveLog.pop()!);
+
+					const previous = newUndoStack.pop()!;
+					const restored = restoreSnapshot(previous);
+					currentGrid = restored.grid;
+					currentSelectedCell = restored.selectedCell;
+				}
+
+				return {
+					...state,
+					grid: currentGrid,
+					selectedCell: currentSelectedCell,
+					undoStack: newUndoStack,
+					redoStack: newRedoStack,
+					moveLog: newMoveLog,
+					redoMoveLog: newRedoMoveLog
 				};
 			}),
 
@@ -382,16 +431,22 @@ function createGameStore() {
 				const currentSnapshot = snapshotState(state);
 				const newState = { ...state };
 
+				let description: string | null;
 				if (state.isPencilMode) {
-					handlePencilMode(newState, state.selectedCell, value);
+					description = handlePencilMode(newState, state.selectedCell, value);
 				} else {
-					handlePenMode(newState, state.selectedCell, value);
+					description = handlePenMode(newState, state.selectedCell, value);
 				}
 
+				if (description === null) return state;
+
+				const entry: MoveLogEntry = { description, timestamp: state.elapsedTime };
 				return {
 					...newState,
 					undoStack: [...state.undoStack, currentSnapshot],
-					redoStack: []
+					redoStack: [],
+					moveLog: [...state.moveLog, entry],
+					redoMoveLog: []
 				};
 			}),
 
@@ -404,12 +459,17 @@ function createGameStore() {
 				const currentSnapshot = snapshotState(state);
 				const newState = { ...state };
 
-				handlePencilMode(newState, state.selectedCell, value);
+				const description = handlePencilMode(newState, state.selectedCell, value);
 
+				if (description === null) return state;
+
+				const entry: MoveLogEntry = { description, timestamp: state.elapsedTime };
 				return {
 					...newState,
 					undoStack: [...state.undoStack, currentSnapshot],
-					redoStack: []
+					redoStack: [],
+					moveLog: [...state.moveLog, entry],
+					redoMoveLog: []
 				};
 			}),
 
@@ -648,6 +708,8 @@ export const formattedTime = derived(gameStore, ($gameStore) =>
 );
 export const isNewBestTime = derived(gameStore, ($gameStore) => $gameStore.isNewBestTime);
 export const previousBestTime = derived(gameStore, ($gameStore) => $gameStore.previousBestTime);
+export const moveLog = derived(gameStore, ($gameStore) => $gameStore.moveLog);
+export const moveLogCount = derived(gameStore, ($gameStore) => $gameStore.moveLog.length);
 
 function checkSolution(state: GameState): GameState {
 	const newState = { ...state };

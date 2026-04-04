@@ -1,13 +1,22 @@
 import type { GameState } from './gameStore';
 
+export type MoveLogEntry = {
+	description: string;
+	timestamp: number;
+};
+
 export type HistoryState = {
 	undoStack: GameState[];
 	redoStack: GameState[];
+	moveLog: MoveLogEntry[];
+	redoMoveLog: MoveLogEntry[];
 };
 
 export const initialHistoryState: HistoryState = {
 	undoStack: [],
-	redoStack: []
+	redoStack: [],
+	moveLog: [],
+	redoMoveLog: []
 };
 
 /**
