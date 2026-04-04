@@ -29,7 +29,6 @@
 	<dialog
 		bind:this={dialogElement}
 		class="modal-overlay"
-		open
 		on:click={onCancel}
 		on:keydown|stopPropagation={handleKeyDown}
 		aria-modal="true"
