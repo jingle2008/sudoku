@@ -324,12 +324,20 @@ function createGameStore() {
 				const firstEmptyCell = findFirstEmptyCell(newGrid);
 				newGrid[firstEmptyCell.row][firstEmptyCell.col].isSelected = true;
 
+				if (state.flashTimeout !== null) {
+					clearTimeout(state.flashTimeout);
+				}
+
 				return {
 					...state,
 					grid: newGrid,
 					selectedCell: firstEmptyCell,
 					...initialHistoryState,
 					isComplete: false,
+					isPencilMode: false,
+					isNewBestTime: false,
+					previousBestTime: null,
+					flashTimeout: null,
 					startTime: timer.startTime,
 					elapsedTime: 0,
 					timerInterval: timer.timerInterval
