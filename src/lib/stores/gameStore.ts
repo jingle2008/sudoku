@@ -377,6 +377,7 @@ function createGameStore() {
 
 		undo: () =>
 			update((state) => {
+				if (state.isComplete) return state;
 				if (state.undoStack.length === 0) return state;
 
 				const currentSnapshot = snapshotState(state);
@@ -397,6 +398,7 @@ function createGameStore() {
 
 		redo: () =>
 			update((state) => {
+				if (state.isComplete) return state;
 				if (state.redoStack.length === 0) return state;
 
 				const currentSnapshot = snapshotState(state);
