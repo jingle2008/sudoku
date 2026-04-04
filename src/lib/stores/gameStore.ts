@@ -172,6 +172,7 @@ function createGameStore() {
 
 	function handlePencilMode(state: GameState, pos: Coord, value: number | null): string | null {
 		const { row, col } = pos;
+		if (state.grid[row][col].value !== null) return null;
 		if (value !== null) {
 			if (hasConflict(state.grid, pos, value)) {
 				flashConflictingCells(state.grid, pos, value);
