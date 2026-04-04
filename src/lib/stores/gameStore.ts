@@ -441,13 +441,44 @@ function createGameStore() {
 				if (description === null) return state;
 
 				const entry: MoveLogEntry = { description, timestamp: state.elapsedTime };
-				return {
+				const result = {
 					...newState,
 					undoStack: [...state.undoStack, currentSnapshot],
 					redoStack: [],
 					moveLog: [...state.moveLog, entry],
 					redoMoveLog: []
 				};
+
+				// Auto-detect completion: all cells filled with no conflicts
+				if (!state.isComplete && !state.isPencilMode && value !== null) {
+					const allFilled = result.grid.every((r) =>
+						r.every((cell) => cell.value !== null)
+					);
+					if (allFilled) {
+						const checked = checkSolution(result);
+						const hasErrors = checked.grid.some((r) =>
+							r.some((cell) => cell.isFlashing)
+						);
+						if (!hasErrors) {
+							stopTimer(state.timerInterval);
+							const prevStats = statsStore.getStats(state.difficulty);
+							const previousBestTime = prevStats.bestTime;
+							let isNewBestTime = statsStore.recordGame(state.difficulty, state.elapsedTime, true);
+							if (previousBestTime === null) {
+								isNewBestTime = true;
+							}
+							return {
+								...result,
+								isComplete: true,
+								isNewBestTime,
+								previousBestTime,
+								timerInterval: null
+							};
+						}
+					}
+				}
+
+				return result;
 			}),
 
 		toggleNote: (value: number) =>

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
 	import ControlPanel from '$lib/components/ControlPanel.svelte';
 	import SolveLogPanel from '$lib/components/SolveLogPanel.svelte';
 	import MoveHistoryPanel from '$lib/components/MoveHistoryPanel.svelte';
@@ -17,12 +18,14 @@
 		previousBestTime,
 		elapsedTime,
 		formattedTime,
+		difficulty,
 		canUndo,
 		canRedo,
 		type Difficulty
 	} from '$lib/stores/gameStore';
 	import { formatTime } from '$lib/stores/timerStore';
 
+	let showCelebration = false;
 	let showRestartConfirm = false;
 	let showShortcuts = false;
 	let currentDifficulty = 'medium';
@@ -182,6 +185,16 @@
 		goto('/');
 	}
 
+	// Trigger celebration when puzzle is completed
+	$: if ($isComplete && !showCelebration) {
+		showCelebration = true;
+	}
+
+	function handleCelebrationNewGame() {
+		showCelebration = false;
+		goto('/difficulty');
+	}
+
 	function goToStats() {
 		goto('/stats');
 	}
@@ -240,7 +253,7 @@
 				<p>Generating puzzle...</p>
 			</div>
 		{/if}
-		<div class="grid" class:generating={$isGenerating}>
+		<div class="grid" class:generating={$isGenerating} class:complete-glow={$isComplete}>
 			{#each $gameStore.grid as row, rowIndex (rowIndex)}
 				<div class="row">
 					{#each row as cell, colIndex (colIndex)}
@@ -301,6 +314,16 @@
 		onConfirm={confirmRestart}
 		onCancel={cancelRestart}
 	/>
+
+	{#if showCelebration}
+		<CelebrationOverlay
+			elapsedTime={$elapsedTime}
+			isNewBestTime={$isNewBestTime}
+			previousBestTime={$previousBestTime}
+			difficulty={$difficulty}
+			onNewGame={handleCelebrationNewGame}
+		/>
+	{/if}
 </div>
 
 <style>
@@ -421,6 +444,16 @@
 	.grid.generating {
 		opacity: 0.3;
 		pointer-events: none;
+	}
+
+	.grid.complete-glow :global(.cell) {
+		animation: goldenGlow 0.3s ease-in-out;
+	}
+
+	@keyframes goldenGlow {
+		0% { background-color: var(--surface-color); }
+		50% { background-color: #fbbf24; box-shadow: inset 0 0 12px rgba(251, 191, 36, 0.6); }
+		100% { background-color: var(--surface-color); }
 	}
 
 	.row {
