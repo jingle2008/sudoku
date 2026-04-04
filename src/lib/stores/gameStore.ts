@@ -593,6 +593,7 @@ function createGameStore() {
 
 		applyAutoNotes: () =>
 			update((state) => {
+				const currentSnapshot = snapshotState(state);
 				const newState = { ...state };
 				for (let row = 0; row < GRID_SIZE; row++) {
 					for (let col = 0; col < GRID_SIZE; col++) {
@@ -607,21 +608,44 @@ function createGameStore() {
 						}
 					}
 				}
-				return newState;
+				const entry: MoveLogEntry = { description: 'Auto Notes', timestamp: state.elapsedTime };
+				return {
+					...newState,
+					undoStack: [...state.undoStack, currentSnapshot],
+					redoStack: [],
+					moveLog: [...state.moveLog, entry],
+					redoMoveLog: []
+				};
 			}),
 
 		applyNakedSingles: () =>
 			update((state) => {
+				const currentSnapshot = snapshotState(state);
 				const newState = { ...state };
 				processNakedSingles(newState.grid);
-				return newState;
+				const entry: MoveLogEntry = { description: 'Naked Singles', timestamp: state.elapsedTime };
+				return {
+					...newState,
+					undoStack: [...state.undoStack, currentSnapshot],
+					redoStack: [],
+					moveLog: [...state.moveLog, entry],
+					redoMoveLog: []
+				};
 			}),
 
 		applyNakedPairs: () =>
 			update((state) => {
+				const currentSnapshot = snapshotState(state);
 				const newState = { ...state };
 				applyNakedPairs(newState.grid);
-				return newState;
+				const entry: MoveLogEntry = { description: 'Naked Pairs', timestamp: state.elapsedTime };
+				return {
+					...newState,
+					undoStack: [...state.undoStack, currentSnapshot],
+					redoStack: [],
+					moveLog: [...state.moveLog, entry],
+					redoMoveLog: []
+				};
 			}),
 
 		formatTime,
