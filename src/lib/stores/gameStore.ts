@@ -55,6 +55,10 @@ function findFirstEmptyCell(grid: Cell[][]): Coord {
 	return new Coord(0, 0);
 }
 
+// Track active worker and generation to prevent race conditions
+let activeWorker: Worker | null = null;
+let generationId = 0;
+
 // Create the game store
 function createGameStore() {
 	const { subscribe, set, update } = writable({
@@ -247,6 +251,14 @@ function createGameStore() {
 				});
 			}
 
+			// Terminate any existing worker and bump generation counter
+			if (activeWorker) {
+				activeWorker.terminate();
+				activeWorker = null;
+			}
+			generationId++;
+			const currentGeneration = generationId;
+
 			// Try to use a Web Worker for puzzle generation
 			if (typeof Worker !== 'undefined') {
 				update((state) => ({ ...state, isGenerating: true, difficulty }));
@@ -256,24 +268,33 @@ function createGameStore() {
 						new URL('$lib/workers/puzzleWorker.ts', import.meta.url),
 						{ type: 'module' }
 					);
+					activeWorker = worker;
 
 					worker.onmessage = (event: MessageEvent<PuzzleWorkerResponse>) => {
 						if (event.data.type === 'result') {
-							applyPuzzle(event.data.puzzle);
+							if (currentGeneration === generationId) {
+								applyPuzzle(event.data.puzzle);
+							}
 							worker.terminate();
+							if (activeWorker === worker) activeWorker = null;
 						}
 					};
 
 					worker.onerror = () => {
 						// Fallback to synchronous generation on worker error
 						worker.terminate();
-						applyPuzzle(generateSudokuPuzzle(difficulty));
+						if (activeWorker === worker) activeWorker = null;
+						if (currentGeneration === generationId) {
+							applyPuzzle(generateSudokuPuzzle(difficulty));
+						}
 					};
 
 					worker.postMessage({ type: 'generate', difficulty } satisfies PuzzleWorkerRequest);
 				} catch {
 					// Fallback to synchronous generation if worker creation fails
-					applyPuzzle(generateSudokuPuzzle(difficulty));
+					if (currentGeneration === generationId) {
+						applyPuzzle(generateSudokuPuzzle(difficulty));
+					}
 				}
 			} else {
 				// No Web Worker support - generate synchronously
