@@ -189,10 +189,13 @@
 						<div
 							class="cell"
 							class:selected={cell.isSelected}
-							class:border-right={colIndex % 3 === 2}
-							class:border-bottom={rowIndex % 3 === 2}
+							class:border-right={colIndex % 3 === 2 && colIndex !== 8}
+							class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
+							class:border-left={colIndex % 3 === 0 && colIndex !== 0}
+							class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
 							class:initial={cell.isInitial}
 							class:highlighted={cell.isHighlighted}
+							class:same-number={cell.isHighlighted && !cell.isSelected}
 							class:flashing={cell.isFlashing}
 							class:solve-highlight={isSolveHighlighted(rowIndex, colIndex, $highlightedCells)}
 							role="button"
@@ -241,11 +244,11 @@
 	.game-container {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-4);
 		justify-content: center;
 		align-items: center;
 		min-height: 100vh;
-		padding: 0.75rem;
+		padding: var(--space-4);
 		box-sizing: border-box;
 		max-width: 100vw;
 		overflow-x: hidden;
@@ -257,73 +260,71 @@
 		align-items: center;
 		width: 100%;
 		max-width: 800px;
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--space-2);
 	}
 
 	.back-button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.4rem 0.8rem;
-		font-size: 0.9rem;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-4);
+		font-size: 14px;
 		font-weight: 500;
-		color: var(--secondary-color);
-		background: white;
+		color: var(--text-color);
+		background: var(--surface-color);
 		border: 1px solid var(--border-color);
-		border-radius: 8px;
+		border-radius: var(--radius);
 		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease;
+		transition: all 0.15s ease;
 	}
 
 	.back-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		background: var(--surface-secondary);
+		border-color: var(--text-secondary);
 	}
 
 	.back-button:active {
-		transform: translateY(0);
-		box-shadow: none;
+		transform: scale(0.97);
 	}
 
 	.difficulty-badge {
 		text-transform: capitalize;
 		font-weight: 600;
-		padding: 0.4rem 0.8rem;
+		padding: var(--space-2) var(--space-4);
 		background: var(--primary-color);
 		color: white;
 		border-radius: 20px;
-		font-size: 0.9rem;
+		font-size: 14px;
 	}
 
 	.timer {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		font-size: 1.1rem;
 		font-weight: 600;
-		color: var(--secondary-color);
+		color: var(--text-color);
 		width: 100px;
 		justify-content: center;
 	}
 
 	.timer-icon {
-		font-size: 1.2rem;
+		font-size: 1.1rem;
 		flex-shrink: 0;
 	}
 
 	.timer-value {
 		width: 60px;
 		text-align: center;
-		font-family: monospace;
+		font-family: var(--font-grid);
+		font-size: 16px;
 	}
 
 	.game-content {
 		display: flex;
 		flex-direction: row;
-		gap: 1.5rem;
+		gap: var(--space-8);
 		align-items: flex-start;
 		justify-content: center;
 		width: 100%;
@@ -334,125 +335,12 @@
 		width: 400px;
 	}
 
-	.notes {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		grid-template-rows: repeat(3, 1fr);
-		width: 100%;
-		height: 100%;
-		font-size: 1rem;
-		color: #666;
-		padding: 4px;
-		box-sizing: border-box;
-	}
-
-	.note {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.85rem;
-		line-height: 1;
-	}
-
+	/* Grid */
 	.grid {
 		display: flex;
 		flex-direction: column;
-		border: 2px solid var(--secondary-color);
-	}
-
-	.row {
-		display: flex;
-	}
-
-	.cell {
-		width: clamp(36px, calc((100vw - 2rem) / 9), 60px);
-		height: clamp(36px, calc((100vw - 2rem) / 9), 60px);
-		border: 1px solid var(--border-color);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: clamp(1.1rem, 3vw, 1.8rem);
-		cursor: pointer;
-		user-select: none;
-		-webkit-user-select: none;
-		background-color: white;
-		outline: none;
-		position: relative;
-		touch-action: manipulation;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.cell.selected {
-		background-color: #bbdefb;
-	}
-
-	.cell.highlighted {
-		background-color: #e3f2fd;
-	}
-
-	.cell.selected.highlighted {
-		background-color: #bbdefb;
-	}
-
-	.cell.solve-highlight {
-		box-shadow: inset 0 0 0 2.5px #f0a030;
-		background-color: #fff8e1;
-	}
-
-	.cell.selected.solve-highlight {
-		background-color: #bbdefb;
-		box-shadow: inset 0 0 0 2.5px #f0a030;
-	}
-
-	.cell.flashing {
-		background-color: #ffebee;
-		animation: flash 1s ease-in-out;
-	}
-
-	@keyframes flash {
-		0% { background-color: #ffebee; }
-		50% { background-color: #ffcdd2; }
-		100% { background-color: #ffebee; }
-	}
-
-	.cell.border-right {
-		border-right: 2px solid var(--secondary-color);
-	}
-
-	.cell.border-bottom {
-		border-bottom: 2px solid var(--secondary-color);
-	}
-
-	.row:last-child .cell {
-		border-bottom: 1px solid var(--border-color);
-	}
-
-	.row .cell:last-child {
-		border-right: 1px solid var(--border-color);
-	}
-
-	.cell:hover {
-		background-color: #f5f6fa;
-	}
-
-	.cell.selected:hover {
-		background-color: #bbdefb;
-	}
-
-	.cell:focus {
-		outline: none;
-	}
-
-	.cell.initial {
-		font-weight: 600;
-		color: var(--secondary-color);
-	}
-
-	.cell:not(.initial) {
-		color: var(--primary-color);
-	}
-
-	.grid {
+		border: 2.5px solid var(--grid-box-border);
+		border-radius: 2px;
 		max-width: calc(100vw - 1.5rem);
 	}
 
@@ -461,26 +349,158 @@
 		pointer-events: none;
 	}
 
+	.row {
+		display: flex;
+	}
+
+	.cell {
+		width: clamp(40px, calc((100vw - 2rem) / 9), 60px);
+		height: clamp(40px, calc((100vw - 2rem) / 9), 60px);
+		border: 1px solid var(--grid-cell-border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-grid);
+		font-size: 20px;
+		cursor: pointer;
+		user-select: none;
+		-webkit-user-select: none;
+		background-color: var(--surface-color);
+		outline: none;
+		position: relative;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+		transition: background-color 0.1s ease;
+	}
+
+	/* Given (pre-filled) numbers */
+	.cell.initial {
+		font-weight: 700;
+		color: var(--grid-given-color);
+	}
+
+	/* User-entered numbers */
+	.cell:not(.initial) {
+		font-weight: 400;
+		color: var(--grid-user-color);
+	}
+
+	/* Selected cell */
+	.cell.selected {
+		background-color: var(--grid-selected-bg);
+		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
+		z-index: 1;
+	}
+
+	/* Same-number highlight */
+	.cell.same-number {
+		background-color: var(--grid-same-number-bg);
+	}
+
+	/* Row/col/box highlight (when cell selected) */
+	.cell.highlighted:not(.selected):not(.same-number) {
+		background-color: var(--grid-highlight-bg);
+	}
+
+	.cell.selected.highlighted {
+		background-color: var(--grid-selected-bg);
+		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
+	}
+
+	/* Solve step highlight */
+	.cell.solve-highlight {
+		box-shadow: inset 0 0 0 2.5px #f0a030;
+		background-color: #fff8e1;
+	}
+
+	.cell.selected.solve-highlight {
+		background-color: var(--grid-selected-bg);
+		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
+	}
+
+	/* Error flash */
+	.cell.flashing {
+		background-color: var(--danger-light);
+		animation: flash 1s ease-in-out;
+	}
+
+	@keyframes flash {
+		0% { background-color: var(--danger-light); }
+		50% { background-color: #fca5a5; }
+		100% { background-color: var(--danger-light); }
+	}
+
+	/* 3x3 box borders */
+	.cell.border-right {
+		border-right: 2.5px solid var(--grid-box-border);
+	}
+
+	.cell.border-bottom {
+		border-bottom: 2.5px solid var(--grid-box-border);
+	}
+
+	.cell.border-left {
+		border-left: 2.5px solid var(--grid-box-border);
+	}
+
+	.cell.border-top {
+		border-top: 2.5px solid var(--grid-box-border);
+	}
+
+	.cell:hover {
+		background-color: var(--primary-lighter);
+	}
+
+	.cell.selected:hover {
+		background-color: var(--grid-selected-bg);
+	}
+
+	.cell:focus {
+		outline: none;
+	}
+
+	/* Notes */
+	.notes {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		grid-template-rows: repeat(3, 1fr);
+		width: 100%;
+		height: 100%;
+		padding: 2px;
+		box-sizing: border-box;
+	}
+
+	.note {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-grid);
+		font-size: 10px;
+		line-height: 1;
+		color: var(--text-secondary);
+	}
+
+	/* Loading */
 	.loading-overlay {
 		position: absolute;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.75rem;
+		gap: var(--space-3);
 		z-index: 5;
 		padding-top: 8rem;
 	}
 
 	.loading-overlay p {
-		font-size: 0.95rem;
-		color: var(--secondary-color);
+		font-size: 14px;
+		color: var(--text-color);
 		font-weight: 500;
 	}
 
 	.spinner {
 		width: 36px;
 		height: 36px;
-		border: 3px solid var(--border-color);
+		border: 3px solid var(--border-light);
 		border-top-color: var(--primary-color);
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
@@ -490,20 +510,21 @@
 		to { transform: rotate(360deg); }
 	}
 
+	/* Keyboard shortcuts */
 	.shortcuts-toggle {
 		position: fixed;
-		bottom: 1rem;
-		right: 1rem;
+		bottom: var(--space-4);
+		right: var(--space-4);
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
 		border: 1px solid var(--border-color);
-		background: white;
+		background: var(--surface-color);
 		font-size: 1.1rem;
 		font-weight: 700;
-		color: var(--secondary-color);
+		color: var(--text-color);
 		cursor: pointer;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		z-index: 10;
 		display: flex;
 		align-items: center;
@@ -511,25 +532,25 @@
 	}
 
 	.shortcuts-toggle:hover {
-		background: #f0f0f0;
+		background: var(--surface-secondary);
 	}
 
 	.shortcuts-panel {
-		background: white;
+		background: var(--surface-color);
 		border: 1px solid var(--border-color);
-		border-radius: 8px;
-		padding: 0.75rem 1rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		border-radius: var(--radius);
+		padding: var(--space-3) var(--space-4);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 		width: 100%;
 		max-width: 340px;
-		font-size: 0.85rem;
+		font-size: 13px;
 	}
 
 	.shortcuts-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--space-2);
 	}
 
 	.shortcuts-close {
@@ -537,52 +558,53 @@
 		border: none;
 		font-size: 1.2rem;
 		cursor: pointer;
-		color: #666;
-		padding: 0 0.25rem;
+		color: var(--text-secondary);
+		padding: 0 var(--space-1);
 	}
 
 	.shortcuts-list {
 		margin: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
 	}
 
 	.shortcuts-list div {
 		display: flex;
-		gap: 0.75rem;
+		gap: var(--space-3);
 	}
 
 	.shortcuts-list dt {
 		font-weight: 600;
 		min-width: 120px;
-		color: var(--secondary-color);
-		font-family: monospace;
-		font-size: 0.8rem;
+		color: var(--text-color);
+		font-family: var(--font-grid);
+		font-size: 12px;
 	}
 
 	.shortcuts-list dd {
 		margin: 0;
-		color: #555;
+		color: var(--text-secondary);
 	}
 
+	/* Mobile */
 	@media (max-width: 768px) {
 		.game-container {
 			justify-content: flex-start;
-			padding: 0.5rem;
+			padding: var(--space-2);
 			padding-bottom: env(safe-area-inset-bottom, 2rem);
-			gap: 0.5rem;
+			gap: var(--space-3);
 		}
 
 		.game-content {
 			flex-direction: column;
 			align-items: center;
-			gap: 0.75rem;
+			gap: var(--space-4);
 		}
 
 		.game-header {
 			max-width: 100%;
-			margin-bottom: 0.25rem;
+			margin-bottom: var(--space-1);
 		}
 
 		.control-panel-container {
@@ -593,37 +615,38 @@
 		.cell {
 			width: calc((100vw - 1.5rem) / 9);
 			height: calc((100vw - 1.5rem) / 9);
+			min-width: 40px;
+			min-height: 40px;
 		}
 
 		.notes {
-			font-size: 0.65rem;
 			padding: 1px;
 		}
 
 		.note {
-			font-size: 0.6rem;
+			font-size: 8px;
 		}
 	}
 
 	@media (max-width: 375px) {
 		.game-container {
-			padding: 0.25rem;
+			padding: var(--space-1);
 		}
 
 		.cell {
 			width: calc((100vw - 1rem) / 9);
 			height: calc((100vw - 1rem) / 9);
-			font-size: 1rem;
+			font-size: 16px;
 		}
 
 		.back-button {
-			padding: 0.3rem 0.5rem;
-			font-size: 0.8rem;
+			padding: var(--space-1) var(--space-2);
+			font-size: 12px;
 		}
 
 		.difficulty-badge {
-			padding: 0.3rem 0.6rem;
-			font-size: 0.8rem;
+			padding: var(--space-1) var(--space-3);
+			font-size: 12px;
 		}
 
 		.timer {

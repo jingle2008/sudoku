@@ -127,8 +127,10 @@
 						<div
 							class="cell"
 							class:selected={cell.isSelected}
-							class:border-right={colIndex % 3 === 2}
-							class:border-bottom={rowIndex % 3 === 2}
+							class:border-right={colIndex % 3 === 2 && colIndex !== 8}
+							class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
+							class:border-left={colIndex % 3 === 0 && colIndex !== 0}
+							class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
 							class:initial={cell.isInitial}
 							class:highlighted={cell.isHighlighted}
 							class:flashing={cell.isFlashing}
@@ -185,11 +187,12 @@
 	.game-container {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-4);
 		justify-content: center;
 		align-items: center;
 		min-height: 100vh;
-		padding: 0.75rem;
+		padding: var(--space-4);
+		box-sizing: border-box;
 	}
 
 	.game-header {
@@ -198,73 +201,70 @@
 		align-items: center;
 		width: 100%;
 		max-width: 800px;
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--space-2);
 	}
 
 	.back-button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.4rem 0.8rem;
-		font-size: 0.9rem;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-4);
+		font-size: 14px;
 		font-weight: 500;
-		color: var(--secondary-color);
-		background: white;
+		color: var(--text-color);
+		background: var(--surface-color);
 		border: 1px solid var(--border-color);
-		border-radius: 8px;
+		border-radius: var(--radius);
 		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease;
+		transition: all 0.15s ease;
 	}
 
 	.back-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		background: var(--surface-secondary);
+		border-color: var(--text-secondary);
 	}
 
 	.back-button:active {
-		transform: translateY(0);
-		box-shadow: none;
+		transform: scale(0.97);
 	}
 
 	.mode-badge {
-		text-transform: capitalize;
 		font-weight: 600;
-		padding: 0.4rem 0.8rem;
+		padding: var(--space-2) var(--space-4);
 		background: var(--primary-color);
 		color: white;
 		border-radius: 20px;
-		font-size: 0.9rem;
+		font-size: 14px;
 	}
 
 	.timer {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		font-size: 1.1rem;
 		font-weight: 600;
-		color: var(--secondary-color);
+		color: var(--text-color);
 		width: 100px;
 		justify-content: center;
 	}
 
 	.timer-icon {
-		font-size: 1.2rem;
+		font-size: 1.1rem;
 		flex-shrink: 0;
 	}
 
 	.timer-value {
 		width: 60px;
 		text-align: center;
-		font-family: monospace;
+		font-family: var(--font-grid);
+		font-size: 16px;
 	}
 
 	.game-content {
 		display: flex;
 		flex-direction: row;
-		gap: 1.5rem;
+		gap: var(--space-8);
 		align-items: flex-start;
 		justify-content: center;
 		width: 100%;
@@ -275,30 +275,11 @@
 		width: 400px;
 	}
 
-	.notes {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		grid-template-rows: repeat(3, 1fr);
-		width: 100%;
-		height: 100%;
-		font-size: 1rem;
-		color: #666;
-		padding: 4px;
-		box-sizing: border-box;
-	}
-
-	.note {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.85rem;
-		line-height: 1;
-	}
-
 	.grid {
 		display: flex;
 		flex-direction: column;
-		border: 2px solid var(--secondary-color);
+		border: 2.5px solid var(--grid-box-border);
+		border-radius: 2px;
 	}
 
 	.row {
@@ -308,82 +289,117 @@
 	.cell {
 		width: clamp(40px, 8vw, 60px);
 		height: clamp(40px, 8vw, 60px);
-		border: 1px solid var(--border-color);
+		border: 1px solid var(--grid-cell-border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: clamp(1.2rem, 3vw, 1.8rem);
+		font-family: var(--font-grid);
+		font-size: 20px;
 		cursor: pointer;
 		user-select: none;
-		background-color: white;
+		-webkit-user-select: none;
+		background-color: var(--surface-color);
 		outline: none;
 		position: relative;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+		transition: background-color 0.1s ease;
+	}
+
+	.cell.initial {
+		font-weight: 700;
+		color: var(--grid-given-color);
+	}
+
+	.cell:not(.initial) {
+		font-weight: 400;
+		color: var(--grid-user-color);
 	}
 
 	.cell.selected {
-		background-color: #bbdefb;
+		background-color: var(--grid-selected-bg);
+		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
+		z-index: 1;
 	}
 
-	.cell.highlighted {
-		background-color: #e3f2fd;
+	.cell.highlighted:not(.selected) {
+		background-color: var(--grid-highlight-bg);
 	}
 
 	.cell.selected.highlighted {
-		background-color: #bbdefb;
+		background-color: var(--grid-selected-bg);
+		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
 	}
 
 	.cell.flashing {
-		background-color: #ffebee;
+		background-color: var(--danger-light);
 		animation: flash 1s ease-in-out;
 	}
 
 	@keyframes flash {
-		0% { background-color: #ffebee; }
-		50% { background-color: #ffcdd2; }
-		100% { background-color: #ffebee; }
+		0% { background-color: var(--danger-light); }
+		50% { background-color: #fca5a5; }
+		100% { background-color: var(--danger-light); }
 	}
 
 	.cell.border-right {
-		border-right: 2px solid var(--secondary-color);
+		border-right: 2.5px solid var(--grid-box-border);
 	}
 
 	.cell.border-bottom {
-		border-bottom: 2px solid var(--secondary-color);
+		border-bottom: 2.5px solid var(--grid-box-border);
 	}
 
-	.row:last-child .cell {
-		border-bottom: 1px solid var(--border-color);
+	.cell.border-left {
+		border-left: 2.5px solid var(--grid-box-border);
 	}
 
-	.row .cell:last-child {
-		border-right: 1px solid var(--border-color);
+	.cell.border-top {
+		border-top: 2.5px solid var(--grid-box-border);
 	}
 
 	.cell:hover {
-		background-color: #f5f6fa;
+		background-color: var(--primary-lighter);
 	}
 
 	.cell.selected:hover {
-		background-color: #bbdefb;
+		background-color: var(--grid-selected-bg);
 	}
 
 	.cell:focus {
 		outline: none;
 	}
 
-	.cell.initial {
-		font-weight: 600;
-		color: var(--secondary-color);
+	.notes {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		grid-template-rows: repeat(3, 1fr);
+		width: 100%;
+		height: 100%;
+		padding: 2px;
+		box-sizing: border-box;
 	}
 
-	.cell:not(.initial) {
-		color: var(--primary-color);
+	.note {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-grid);
+		font-size: 10px;
+		line-height: 1;
+		color: var(--text-secondary);
 	}
 
 	@media (max-width: 768px) {
+		.game-container {
+			padding: var(--space-2);
+			gap: var(--space-3);
+		}
+
 		.game-content {
 			flex-direction: column;
 			align-items: center;
+			gap: var(--space-4);
 		}
 
 		.game-header {
@@ -393,6 +409,11 @@
 		.control-panel-container {
 			width: 100%;
 			max-width: 400px;
+		}
+
+		.cell {
+			min-width: 40px;
+			min-height: 40px;
 		}
 	}
 </style> 

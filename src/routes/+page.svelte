@@ -9,13 +9,11 @@
 	</div>
 
 	<div class="button-container">
-		<button class="new-game-button" on:click={() => goto('/difficulty')}>
-			<span class="icon">🎮</span>
-			<span class="text">New Game</span>
+		<button class="primary-btn" on:click={() => goto('/difficulty')}>
+			New Game
 		</button>
-		<button class="new-game-button" on:click={() => goto('/puzzle/edit')}>
-			<span class="icon">✏️</span>
-			<span class="text">Edit Puzzle</span>
+		<button class="secondary-btn" on:click={() => goto('/puzzle/edit')}>
+			Edit Puzzle
 		</button>
 	</div>
 </div>
@@ -27,79 +25,92 @@
 		align-items: center;
 		justify-content: center;
 		min-height: 100vh;
-		padding: 2rem;
-		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		padding: var(--space-8);
+		background: var(--background-color);
 	}
 
 	.title-container {
 		text-align: center;
-		margin-bottom: 3rem;
+		margin-bottom: var(--space-10);
 	}
 
 	h1 {
-		font-size: 4rem;
-		color: var(--secondary-color);
-		margin-bottom: 1rem;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+		font-size: 3.5rem;
+		font-weight: 700;
+		color: var(--text-color);
+		margin-bottom: var(--space-3);
+		letter-spacing: -0.02em;
 	}
 
 	.subtitle {
-		font-size: 1.5rem;
-		color: #34495e;
+		font-size: 1.1rem;
+		color: var(--text-secondary);
 	}
 
 	.button-container {
-		margin-top: 2rem;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: var(--space-3);
+		width: 100%;
+		max-width: 280px;
 	}
 
-	.new-game-button {
+	.primary-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 1rem;
-		padding: 1rem 2rem;
-		font-size: 1.5rem;
+		padding: var(--space-4) var(--space-6);
+		font-size: 1.1rem;
 		font-weight: 600;
 		color: white;
 		background: var(--primary-color);
 		border: none;
-		border-radius: 8px;
+		border-radius: var(--radius);
 		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: all 0.15s ease;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
-	.new-game-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+	.primary-btn:hover {
+		background: var(--primary-hover);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 	}
 
-	.new-game-button:active {
-		transform: translateY(1px);
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	.primary-btn:active {
+		transform: scale(0.98);
 	}
 
-	.icon {
-		font-size: 1.8rem;
+	.secondary-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-4) var(--space-6);
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-color);
+		background: var(--surface-color);
+		border: 1.5px solid var(--border-color);
+		border-radius: var(--radius);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.secondary-btn:hover {
+		background: var(--surface-secondary);
+		border-color: var(--text-secondary);
+	}
+
+	.secondary-btn:active {
+		transform: scale(0.98);
 	}
 
 	@media (max-width: 768px) {
 		h1 {
-			font-size: 3rem;
+			font-size: 2.5rem;
 		}
 
 		.subtitle {
-			font-size: 1.2rem;
-		}
-
-		.new-game-button {
-			font-size: 1.2rem;
-			padding: 0.8rem 1.6rem;
+			font-size: 1rem;
 		}
 	}
 </style>

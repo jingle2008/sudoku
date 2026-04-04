@@ -1,19 +1,60 @@
+/* Google Fonts - JetBrains Mono for grid numbers */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 /* Global styles */
 :root {
-  --primary-color: #3498db;
-  --secondary-color: #2c3e50;
-  --background-color: #f5f7fa;
-  --text-color: #2c3e50;
-  --border-color: #bdc3c7;
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: #17a2b8;
+  /* Primary palette: Blue, Green (success only), Gray */
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: #dbeafe;
+  --primary-lighter: #eff6ff;
+
+  --secondary-color: #1a1a2e;
+  --text-color: #1a1a2e;
+  --text-secondary: #6b7280;
+
+  --background-color: #f8fafc;
+  --surface-color: #ffffff;
+  --surface-secondary: #f3f4f6;
+
+  --border-color: #d1d5db;
+  --border-light: #e5e7eb;
+
+  --success-color: #16a34a;
+  --success-light: #dcfce7;
+  --danger-color: #ef4444;
+  --danger-light: #fee2e2;
+
+  /* Grid specific */
+  --grid-given-color: #1a1a2e;
+  --grid-user-color: #2563eb;
+  --grid-box-border: #1a1a2e;
+  --grid-cell-border: #d1d5db;
+  --grid-selected-bg: #dbeafe;
+  --grid-selected-border: #3b82f6;
+  --grid-highlight-bg: #eff6ff;
+  --grid-same-number-bg: #e0e7ff;
+
+  /* Spacing base unit: 8px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Typography */
+  --font-grid: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+  --radius: 8px;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background-color);

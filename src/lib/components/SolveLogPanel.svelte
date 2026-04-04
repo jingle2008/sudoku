@@ -22,14 +22,14 @@
 
 <div class="solve-log-panel">
 	<button class="log-header" on:click={toggle} aria-expanded={expanded}>
-		<span class="toggle-arrow" class:expanded>{expanded ? '▼' : '▶'}</span>
+		<span class="toggle-arrow">{expanded ? '▾' : '▸'}</span>
 		<span>Solve Log ({$stepCount} steps)</span>
 	</button>
 
 	{#if expanded}
 		<div class="log-body">
 			{#if $solveLogStore.steps.length === 0}
-				<div class="log-empty">No steps recorded yet. Use the solver buttons above to see the log.</div>
+				<div class="log-empty">No steps recorded yet. Use the solver tools above to see the log.</div>
 			{:else}
 				<div class="log-list">
 					{#each $solveLogStore.steps as step, i (i)}
@@ -45,9 +45,9 @@
 				</div>
 				<div class="log-actions">
 					{#if $selectedStepIndex !== null}
-						<button class="clear-selection-button" on:click={handleClearSelection}>Clear Selection</button>
+						<button class="clear-selection-btn" on:click={handleClearSelection}>Clear Selection</button>
 					{/if}
-					<button class="clear-button" on:click={clearLog}>Clear Log</button>
+					<button class="clear-btn" on:click={clearLog}>Clear Log</button>
 				</div>
 			{/if}
 		</div>
@@ -58,44 +58,45 @@
 	.solve-log-panel {
 		width: 100%;
 		max-width: 800px;
-		background: #f8f9fa;
-		border-radius: 8px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		background: var(--surface-color);
+		border-radius: var(--radius);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 		overflow: hidden;
 	}
 
 	.log-header {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		width: 100%;
-		padding: 0.75rem 1rem;
-		background: #f8f9fa;
+		padding: var(--space-3) var(--space-4);
+		background: var(--surface-color);
 		border: none;
 		cursor: pointer;
-		font-size: 0.95rem;
+		font-size: 14px;
 		font-weight: 600;
-		color: var(--secondary-color);
+		color: var(--text-color);
 		text-align: left;
+		transition: background 0.12s ease;
 	}
 
 	.log-header:hover {
-		background: #e9ecef;
+		background: var(--surface-secondary);
 	}
 
 	.toggle-arrow {
-		font-size: 0.75rem;
-		transition: transform 0.2s ease;
+		font-size: 12px;
+		color: var(--text-secondary);
 	}
 
 	.log-body {
-		padding: 0 1rem 0.75rem;
+		padding: 0 var(--space-4) var(--space-3);
 	}
 
 	.log-empty {
-		color: #6c757d;
-		font-size: 0.85rem;
-		padding: 0.5rem 0;
+		color: var(--text-secondary);
+		font-size: 13px;
+		padding: var(--space-2) 0;
 	}
 
 	.log-list {
@@ -103,82 +104,86 @@
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: var(--space-1);
 	}
 
 	.log-entry {
 		display: flex;
-		gap: 0.5rem;
-		padding: 0.4rem 0.5rem;
-		background: white;
-		border-radius: 4px;
-		font-size: 0.85rem;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		background: var(--surface-secondary);
+		border-radius: var(--radius);
+		font-size: 13px;
 		line-height: 1.4;
-		border: 1px solid #e9ecef;
+		border: 1px solid transparent;
 		cursor: pointer;
 		text-align: left;
 		width: 100%;
-		transition: background-color 0.15s ease;
+		transition: all 0.12s ease;
 	}
 
 	.log-entry:hover {
-		background: #eef3ff;
+		background: var(--primary-lighter);
+		border-color: var(--primary-light);
 	}
 
 	.log-entry.step-selected {
-		background: #d0e4ff;
-		border-color: #90b8f8;
+		background: var(--primary-light);
+		border-color: var(--primary-color);
 	}
 
 	.step-number {
-		color: #6c757d;
+		color: var(--text-secondary);
 		font-weight: 600;
-		font-family: monospace;
+		font-family: var(--font-grid);
 		flex-shrink: 0;
 		min-width: 2rem;
+		font-size: 12px;
 	}
 
 	.step-description {
-		font-family: monospace;
-		font-size: 0.8rem;
-		color: #333;
+		font-family: var(--font-grid);
+		font-size: 12px;
+		color: var(--text-color);
 		word-break: break-word;
 	}
 
 	.log-actions {
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
+		gap: var(--space-2);
+		margin-top: var(--space-2);
 	}
 
-	.clear-button {
-		padding: 0.4rem 0.8rem;
-		background: #6c757d;
-		color: white;
-		border: none;
-		border-radius: 4px;
+	.clear-btn {
+		padding: var(--space-2) var(--space-3);
+		background: var(--surface-secondary);
+		color: var(--text-color);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius);
 		cursor: pointer;
-		font-size: 0.8rem;
+		font-size: 12px;
 		font-weight: 500;
+		transition: all 0.12s ease;
 	}
 
-	.clear-button:hover {
-		background: #5a6268;
+	.clear-btn:hover {
+		background: var(--border-light);
 	}
 
-	.clear-selection-button {
-		padding: 0.4rem 0.8rem;
-		background: #e9ecef;
-		color: #495057;
-		border: 1px solid #ced4da;
-		border-radius: 4px;
+	.clear-selection-btn {
+		padding: var(--space-2) var(--space-3);
+		background: var(--surface-color);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius);
 		cursor: pointer;
-		font-size: 0.8rem;
+		font-size: 12px;
 		font-weight: 500;
+		transition: all 0.12s ease;
 	}
 
-	.clear-selection-button:hover {
-		background: #dee2e6;
+	.clear-selection-btn:hover {
+		background: var(--surface-secondary);
 	}
 
 	@media (max-width: 768px) {
