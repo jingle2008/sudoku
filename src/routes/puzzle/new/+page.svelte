@@ -97,8 +97,9 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
-		// Don't handle keyboard events when dialog is open
+		// Don't handle keyboard events when dialog is open or game is complete
 		if (showRestartConfirm) return;
+		if ($isComplete) return;
 
 		const isMod = event.ctrlKey || event.metaKey;
 
