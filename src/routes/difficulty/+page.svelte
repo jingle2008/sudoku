@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { bestTimes } from '$lib/stores/statsStore';
+	import { formatTime } from '$lib/stores/timerStore';
 
 	type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
@@ -29,6 +31,9 @@
 			<button class="difficulty-card" on:click={() => selectDifficulty(difficulty.value)}>
 				<div class="difficulty-label">{difficulty.label}</div>
 				<div class="difficulty-description">{difficulty.description}</div>
+				<div class="difficulty-best-time">
+					Best: {$bestTimes[difficulty.value] !== null ? formatTime($bestTimes[difficulty.value] as number) : '—'}
+				</div>
 			</button>
 		{/each}
 	</div>
@@ -99,6 +104,14 @@
 	.difficulty-description {
 		font-size: 13px;
 		color: var(--text-secondary);
+	}
+
+	.difficulty-best-time {
+		font-size: 12px;
+		font-family: var(--font-grid);
+		color: var(--primary-color);
+		margin-top: var(--space-1);
+		font-weight: 500;
 	}
 
 	.back-button {

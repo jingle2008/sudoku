@@ -11,11 +11,16 @@
 		grid,
 		isGameStarted,
 		isGenerating,
+		isComplete,
+		isNewBestTime,
+		previousBestTime,
+		elapsedTime,
 		formattedTime,
 		canUndo,
 		canRedo,
 		type Difficulty
 	} from '$lib/stores/gameStore';
+	import { formatTime } from '$lib/stores/timerStore';
 
 	let showRestartConfirm = false;
 	let showShortcuts = false;
@@ -30,6 +35,8 @@
 		window.addEventListener('keydown', handleKeyDown);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
+			// Record abandoned game when navigating away
+			gameStore.recordAbandoned();
 		};
 	});
 
@@ -136,14 +143,23 @@
 	function goToHome() {
 		goto('/');
 	}
+
+	function goToStats() {
+		goto('/stats');
+	}
 </script>
 
 <div class="game-container">
 	<div class="game-header">
-		<button class="back-button" on:click={goToHome}>
-			<span class="icon">←</span>
-			<span class="text">Home</span>
-		</button>
+		<div class="header-left">
+			<button class="back-button" on:click={goToHome}>
+				<span class="icon">←</span>
+				<span class="text">Home</span>
+			</button>
+			<button class="back-button" on:click={goToStats}>
+				<span class="text">Stats</span>
+			</button>
+		</div>
 		<div class="difficulty-badge">
 			{currentDifficulty}
 		</div>
@@ -265,6 +281,11 @@
 		width: 100%;
 		max-width: 800px;
 		margin-bottom: var(--space-2);
+	}
+
+	.header-left {
+		display: flex;
+		gap: var(--space-2);
 	}
 
 	.back-button {

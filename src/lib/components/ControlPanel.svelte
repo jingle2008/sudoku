@@ -6,8 +6,12 @@
 		canUndo,
 		canRedo,
 		canDelete,
-		isComplete
+		isComplete,
+		isNewBestTime,
+		previousBestTime,
+		elapsedTime
 	} from '$lib/stores/gameStore';
+	import { formatTime } from '$lib/stores/timerStore';
 
 	let solverToolsOpen = false;
 	let selectedNumber: number | null = null;
@@ -173,7 +177,19 @@
 	</div>
 
 	{#if $isComplete}
-		<div class="completion-message">Congratulations! Puzzle complete!</div>
+		<div class="completion-message" class:new-best={$isNewBestTime}>
+			{#if $isNewBestTime}
+				<div class="celebration">
+					<span class="trophy">&#127942;</span>
+					<span>New Best Time!</span>
+				</div>
+			{/if}
+			<div>Congratulations! Puzzle complete!</div>
+			<div class="completion-time">Time: {formatTime($elapsedTime)}</div>
+			{#if $isNewBestTime && $previousBestTime !== null}
+				<div class="previous-best">Previous best: {formatTime($previousBestTime)}</div>
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -423,6 +439,51 @@
 	border-radius: var(--radius);
 	font-weight: 600;
 	font-size: 14px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.completion-message.new-best {
+	animation: celebrate 0.6s ease-out;
+	border: 2px solid var(--success-color);
+}
+
+.celebration {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.trophy {
+	font-size: 20px;
+	animation: bounce 0.6s ease infinite alternate;
+}
+
+.completion-time {
+	font-family: var(--font-grid);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.previous-best {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-secondary);
+}
+
+@keyframes celebrate {
+	0% { transform: scale(0.95); opacity: 0.7; }
+	50% { transform: scale(1.03); }
+	100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes bounce {
+	from { transform: translateY(0); }
+	to { transform: translateY(-4px); }
 }
 
 /* Mobile */

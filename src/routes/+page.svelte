@@ -19,6 +19,9 @@
 		<button class="secondary-btn" on:click={() => goto('/puzzle/edit')}>
 			Edit Puzzle
 		</button>
+		<button class="secondary-btn" on:click={() => goto('/stats')}>
+			Statistics
+		</button>
 	</div>
 </div>
 

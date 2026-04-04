@@ -13,6 +13,7 @@ import type { Cell } from '$lib/sudoku/types';
 import type { Grid } from '$lib/sudoku/engine';
 import type { PuzzleWorkerRequest, PuzzleWorkerResponse } from '$lib/workers/puzzleWorker';
 import { solveLogStore } from './solveLogStore';
+import { statsStore } from './statsStore';
 
 import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
 import { snapshotState, restoreSnapshot, type HistoryState, initialHistoryState } from './historyStore';
@@ -66,6 +67,8 @@ function createGameStore() {
 		difficulty: 'medium' as Difficulty,
 		initialGrid: [] as (number | null)[][],
 		isComplete: false,
+		isNewBestTime: false,
+		previousBestTime: null as number | null,
 		...initialTimerState,
 		flashTimeout: null as number | null,
 		isAuthoring: false
@@ -417,11 +420,35 @@ function createGameStore() {
 		checkSolution: () =>
 			update((state) => {
 				const newState = checkSolution(state);
+				const isComplete = newState.grid.every((row) =>
+					row.every((cell) => cell.value !== null && !cell.isFlashing)
+				);
+
+				let isNewBestTime = false;
+				let previousBestTime: number | null = null;
+
+				if (isComplete && !state.isComplete) {
+					// Stop timer
+					stopTimer(state.timerInterval);
+
+					// Get previous best before recording
+					const prevStats = statsStore.getStats(state.difficulty);
+					previousBestTime = prevStats.bestTime;
+
+					// Record the completed game
+					isNewBestTime = statsStore.recordGame(state.difficulty, state.elapsedTime, true);
+					// First completion ever also counts as "new best" for celebration
+					if (previousBestTime === null) {
+						isNewBestTime = true;
+					}
+				}
+
 				return {
 					...state,
-					isComplete: newState.grid.every((row) =>
-						row.every((cell) => cell.value !== null && !cell.isFlashing)
-					),
+					isComplete,
+					isNewBestTime,
+					previousBestTime,
+					timerInterval: isComplete ? null : state.timerInterval,
 				};
 			}),
 
@@ -514,6 +541,15 @@ function createGameStore() {
 			});
 		},
 
+		recordAbandoned: () => {
+			update((state) => {
+				if (state.isGameStarted && !state.isComplete && !state.isAuthoring) {
+					statsStore.recordGame(state.difficulty, state.elapsedTime, false);
+				}
+				return state;
+			});
+		},
+
 		resetGame: () => {
 			update((state) => {
 				stopTimer(state.timerInterval);
@@ -529,6 +565,8 @@ function createGameStore() {
 					difficulty: 'medium',
 					initialGrid: [],
 					isComplete: false,
+					isNewBestTime: false,
+					previousBestTime: null,
 					...initialTimerState,
 					flashTimeout: null
 				};
@@ -590,6 +628,8 @@ export const elapsedTime = derived(gameStore, ($gameStore) => $gameStore.elapsed
 export const formattedTime = derived(gameStore, ($gameStore) =>
 	gameStore.formatTime($gameStore.elapsedTime)
 );
+export const isNewBestTime = derived(gameStore, ($gameStore) => $gameStore.isNewBestTime);
+export const previousBestTime = derived(gameStore, ($gameStore) => $gameStore.previousBestTime);
 
 function checkSolution(state: GameState): GameState {
 	const newState = { ...state };
