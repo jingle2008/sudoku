@@ -773,6 +773,13 @@ function checkSolution(state: GameState): GameState {
 	const newState = { ...state };
 	const grid = newState.grid;
 
+	// Reset all flashing state before checking
+	for (let row = 0; row < GRID_SIZE; row++) {
+		for (let col = 0; col < GRID_SIZE; col++) {
+			grid[row][col].isFlashing = false;
+		}
+	}
+
 	for (let row = 0; row < GRID_SIZE; row++) {
 		for (let col = 0; col < GRID_SIZE; col++) {
 			const cell = grid[row][col];
