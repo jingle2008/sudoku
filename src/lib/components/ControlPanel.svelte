@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import {
 		gameStore,
 		isPencilMode,
@@ -13,6 +13,8 @@
 		elapsedTime
 	} from '$lib/stores/gameStore';
 	import { formatTime } from '$lib/stores/timerStore';
+
+	const dispatch = createEventDispatcher<{ restart: void }>();
 
 	let solverToolsOpen = false;
 	let selectedNumber: number | null = null;
@@ -205,7 +207,7 @@
 			</button>
 			<button
 				class="action-btn"
-				on:click={() => gameStore.restartGame()}
+				on:click={() => dispatch('restart')}
 				title="Restart Game"
 				aria-label="Restart the game"
 			>

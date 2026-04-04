@@ -298,7 +298,7 @@
 		</div>
 
 		<div class="control-panel-container">
-			<ControlPanel />
+			<ControlPanel on:restart={() => (showRestartConfirm = true)} />
 		</div>
 	</div>
 
