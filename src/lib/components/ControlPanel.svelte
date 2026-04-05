@@ -616,39 +616,72 @@
 @media (max-width: 768px) {
 	.control-panel {
 		max-width: 100%;
-		gap: var(--space-3);
-		padding: var(--space-3);
+		gap: var(--space-2);
+		padding: var(--space-2);
+	}
+
+	.mode-toggle button {
+		min-height: 36px;
+		padding: var(--space-1) var(--space-2);
+		font-size: 13px;
 	}
 
 	/* Keep 3x3 on mobile */
 	.number-pad {
 		grid-template-columns: repeat(3, 1fr);
-		gap: var(--space-2);
+		gap: var(--space-1);
 	}
 
 	.num-btn {
-		aspect-ratio: 1;
-		min-height: 48px;
-		font-size: 22px;
+		aspect-ratio: auto;
+		min-height: 40px;
+		max-height: 52px;
+		font-size: 20px;
+	}
+
+	.action-buttons {
+		gap: var(--space-1);
+	}
+
+	.action-row {
+		gap: var(--space-1);
 	}
 
 	.action-btn {
-		min-height: 44px;
-		font-size: 13px;
+		min-height: 36px;
+		font-size: 12px;
+		padding: var(--space-1) var(--space-2);
 	}
 
-	/* Solver tools collapsed by default handled via JS initial state */
+	.action-btn svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	.solver-tools {
+		display: none;
+	}
+
+	.longpress-hint {
+		padding: 2px var(--space-1);
+		font-size: 11px;
+	}
 }
 
 @media (max-width: 375px) {
 	.control-panel {
-		padding: var(--space-2);
-		gap: var(--space-2);
+		padding: var(--space-1);
+		gap: var(--space-1);
 	}
 
 	.num-btn {
-		min-height: 44px;
-		font-size: 20px;
+		min-height: 36px;
+		font-size: 18px;
+	}
+
+	.action-btn {
+		min-height: 32px;
+		font-size: 11px;
 	}
 }
 </style>

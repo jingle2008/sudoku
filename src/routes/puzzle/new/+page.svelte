@@ -304,8 +304,10 @@
 		</div>
 	</div>
 
-	<SolveLogPanel />
-	<MoveHistoryPanel />
+	<div class="side-panels">
+		<SolveLogPanel />
+		<MoveHistoryPanel />
+	</div>
 
 	<ConfirmDialog
 		isOpen={showRestartConfirm}
@@ -336,7 +338,9 @@
 		justify-content: center;
 		align-items: center;
 		min-height: 100vh;
+		min-height: 100dvh;
 		padding: var(--space-4);
+		padding-bottom: env(safe-area-inset-bottom, 16px);
 		box-sizing: border-box;
 		max-width: 100vw;
 		overflow-x: hidden;
@@ -701,19 +705,25 @@
 		.game-container {
 			justify-content: flex-start;
 			padding: var(--space-2);
-			padding-bottom: env(safe-area-inset-bottom, 2rem);
-			gap: var(--space-3);
+			padding-bottom: env(safe-area-inset-bottom, 8px);
+			gap: var(--space-1);
+			height: 100vh;
+			height: 100dvh;
+			overflow: hidden;
+		}
+
+		.game-header {
+			max-width: 100%;
+			margin-bottom: 0;
+			padding: var(--space-1) 0;
 		}
 
 		.game-content {
 			flex-direction: column;
 			align-items: center;
-			gap: var(--space-4);
-		}
-
-		.game-header {
-			max-width: 100%;
-			margin-bottom: var(--space-1);
+			gap: var(--space-2);
+			flex: 1;
+			min-height: 0;
 		}
 
 		.control-panel-container {
@@ -721,11 +731,14 @@
 			max-width: 400px;
 		}
 
+		/* Size grid cells to fit viewport: leave room for header (~44px), numpad+controls (~280px), gaps */
 		.cell {
-			width: calc((100vw - 1.5rem) / 9);
-			height: calc((100vw - 1.5rem) / 9);
-			min-width: 40px;
-			min-height: 40px;
+			--cell-size: min(calc((100vw - 1.5rem) / 9), calc((100dvh - 340px) / 9));
+			width: var(--cell-size);
+			height: var(--cell-size);
+			min-width: 28px;
+			min-height: 28px;
+			font-size: clamp(14px, var(--cell-size), 20px);
 		}
 
 		.notes {
@@ -735,17 +748,27 @@
 		.note {
 			font-size: 8px;
 		}
+
+		.side-panels {
+			display: none;
+		}
+
+		.shortcuts-toggle {
+			display: none;
+		}
 	}
 
 	@media (max-width: 375px) {
 		.game-container {
 			padding: var(--space-1);
+			padding-bottom: env(safe-area-inset-bottom, 4px);
 		}
 
 		.cell {
-			width: calc((100vw - 1rem) / 9);
-			height: calc((100vw - 1rem) / 9);
-			font-size: 16px;
+			--cell-size: min(calc((100vw - 1rem) / 9), calc((100dvh - 320px) / 9));
+			width: var(--cell-size);
+			height: var(--cell-size);
+			font-size: clamp(12px, var(--cell-size), 16px);
 		}
 
 		.back-button {
