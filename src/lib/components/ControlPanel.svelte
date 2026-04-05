@@ -196,16 +196,6 @@
 
 		<div class="action-row">
 			<button
-				class="action-btn check-btn"
-				on:click={() => gameStore.checkSolution()}
-				disabled={!$isGameStarted}
-				title="Check Solution"
-				aria-label="Check if the current solution is correct"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-				Check
-			</button>
-			<button
 				class="action-btn"
 				on:click={() => dispatch('restart')}
 				title="Restart Game"
