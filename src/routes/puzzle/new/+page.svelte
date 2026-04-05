@@ -29,12 +29,6 @@
 	let showRestartConfirm = false;
 	let showShortcuts = false;
 	let currentDifficulty = 'medium';
-	let gridWidth = 0;
-	let isMobile = false;
-
-	function checkMobile() {
-		isMobile = window.innerWidth <= 768;
-	}
 
 	// Long press on grid cell to temporarily toggle pencil mode
 	let cellLongPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -79,12 +73,9 @@
 		currentDifficulty = urlParams.get('difficulty') || 'medium';
 		solveLogStore.clear();
 		gameStore.startGame(currentDifficulty as Difficulty);
-		checkMobile();
 		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('resize', checkMobile);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('resize', checkMobile);
 			// Record abandoned game when navigating away
 			gameStore.recordAbandoned();
 			gameStore.resetGame();
@@ -264,52 +255,54 @@
 				<p>Generating puzzle...</p>
 			</div>
 		{/if}
-		<div class="grid" class:generating={$isGenerating} class:complete-glow={$isComplete} bind:clientWidth={gridWidth}>
-			{#each $gameStore.grid as row, rowIndex (rowIndex)}
-				<div class="row">
-					{#each row as cell, colIndex (colIndex)}
-						<div
-							class="cell"
-							class:selected={cell.isSelected}
-							class:border-right={colIndex % 3 === 2 && colIndex !== 8}
-							class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
-							class:border-left={colIndex % 3 === 0 && colIndex !== 0}
-							class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
-							class:initial={cell.isInitial}
-							class:highlighted={cell.isHighlighted}
-							class:same-number={cell.isHighlighted && !cell.isSelected}
-							class:flashing={cell.isFlashing}
-							class:solve-highlight={isSolveHighlighted(rowIndex, colIndex, $highlightedCells)}
-							role="button"
-							tabindex="0"
-							data-row={rowIndex}
-							data-col={colIndex}
-							on:click={() => handleCellClick(rowIndex, colIndex)}
-							on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
-							on:touchstart|passive={() => onCellTouchStart(rowIndex, colIndex)}
-							on:touchend={onCellTouchEnd}
-							on:touchcancel={onCellTouchCancel}
-							on:contextmenu={onCellContextMenu}
-						>
-							{#if cell.value !== null}
-								<span class="value">{cell.value}</span>
-							{:else if cell.notes.size > 0}
-								<div class="notes">
-									{#each Array(9) as unused, i (i)}
-										<span class="note" class:active={cell.notes.has(i + 1)}>
-											{cell.notes.has(i + 1) ? i + 1 : ''}
-										</span>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/each}
-		</div>
+		<div class="game-board">
+			<div class="grid" class:generating={$isGenerating} class:complete-glow={$isComplete}>
+				{#each $gameStore.grid as row, rowIndex (rowIndex)}
+					<div class="row">
+						{#each row as cell, colIndex (colIndex)}
+							<div
+								class="cell"
+								class:selected={cell.isSelected}
+								class:border-right={colIndex % 3 === 2 && colIndex !== 8}
+								class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
+								class:border-left={colIndex % 3 === 0 && colIndex !== 0}
+								class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
+								class:initial={cell.isInitial}
+								class:highlighted={cell.isHighlighted}
+								class:same-number={cell.isHighlighted && !cell.isSelected}
+								class:flashing={cell.isFlashing}
+								class:solve-highlight={isSolveHighlighted(rowIndex, colIndex, $highlightedCells)}
+								role="button"
+								tabindex="0"
+								data-row={rowIndex}
+								data-col={colIndex}
+								on:click={() => handleCellClick(rowIndex, colIndex)}
+								on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
+								on:touchstart|passive={() => onCellTouchStart(rowIndex, colIndex)}
+								on:touchend={onCellTouchEnd}
+								on:touchcancel={onCellTouchCancel}
+								on:contextmenu={onCellContextMenu}
+							>
+								{#if cell.value !== null}
+									<span class="value">{cell.value}</span>
+								{:else if cell.notes.size > 0}
+									<div class="notes">
+										{#each Array(9) as unused, i (i)}
+											<span class="note" class:active={cell.notes.has(i + 1)}>
+												{cell.notes.has(i + 1) ? i + 1 : ''}
+											</span>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/each}
+			</div>
 
-		<div class="control-panel-container" style={isMobile && gridWidth ? `width: ${gridWidth}px` : ''}>
-			<ControlPanel on:restart={() => (showRestartConfirm = true)} />
+			<div class="control-panel-container">
+				<ControlPanel on:restart={() => (showRestartConfirm = true)} />
+			</div>
 		</div>
 	</div>
 
@@ -441,6 +434,11 @@
 		justify-content: center;
 		width: 100%;
 		max-width: 900px;
+	}
+
+	.game-board {
+		display: inline-flex;
+		flex-direction: column;
 	}
 
 	.control-panel-container {
@@ -738,7 +736,6 @@
 
 		.control-panel-container {
 			width: 100%;
-			max-width: none;
 		}
 
 		/* Size grid cells to fit viewport: leave room for header (~44px), numpad+controls (~280px), gaps */
@@ -779,7 +776,6 @@
 
 		.control-panel-container {
 			width: 100%;
-			max-width: none;
 		}
 
 		.cell {

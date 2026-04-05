@@ -14,22 +14,13 @@
 
 	let showExitConfirm = false;
 	let showInvalidPuzzleDialog = false;
-	let gridWidth = 0;
-	let isMobile = false;
-
-	function checkMobile() {
-		isMobile = window.innerWidth <= 768;
-	}
 
 	onMount(() => {
 		// Initialize an empty grid for editing
 		gameStore.initializeEditingGrid();
-		checkMobile();
 		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('resize', checkMobile);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('resize', checkMobile);
 		};
 	});
 
@@ -133,46 +124,48 @@
 	</div>
 
 	<div class="game-content">
-		<div class="grid" bind:clientWidth={gridWidth}>
-			{#each $gameStore.grid as row, rowIndex (rowIndex)}
-				<div class="row">
-					{#each row as cell, colIndex (colIndex)}
-						<div
-							class="cell"
-							class:selected={cell.isSelected}
-							class:border-right={colIndex % 3 === 2 && colIndex !== 8}
-							class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
-							class:border-left={colIndex % 3 === 0 && colIndex !== 0}
-							class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
-							class:initial={cell.isInitial}
-							class:highlighted={cell.isHighlighted}
-							class:flashing={cell.isFlashing}
-							role="button"
-							tabindex="0"
-							data-row={rowIndex}
-							data-col={colIndex}
-							on:click={() => gameStore.selectCell(rowIndex, colIndex)}
-							on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
-						>
-							{#if cell.value !== null}
-								<span class="value">{cell.value}</span>
-							{:else if cell.notes.size > 0}
-								<div class="notes">
-									{#each Array(9) as unused, i (i)}
-										<span class="note" class:active={cell.notes.has(i + 1)}>
-											{cell.notes.has(i + 1) ? i + 1 : ''}
-										</span>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/each}
-		</div>
+		<div class="game-board">
+			<div class="grid">
+				{#each $gameStore.grid as row, rowIndex (rowIndex)}
+					<div class="row">
+						{#each row as cell, colIndex (colIndex)}
+							<div
+								class="cell"
+								class:selected={cell.isSelected}
+								class:border-right={colIndex % 3 === 2 && colIndex !== 8}
+								class:border-bottom={rowIndex % 3 === 2 && rowIndex !== 8}
+								class:border-left={colIndex % 3 === 0 && colIndex !== 0}
+								class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
+								class:initial={cell.isInitial}
+								class:highlighted={cell.isHighlighted}
+								class:flashing={cell.isFlashing}
+								role="button"
+								tabindex="0"
+								data-row={rowIndex}
+								data-col={colIndex}
+								on:click={() => gameStore.selectCell(rowIndex, colIndex)}
+								on:keydown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
+							>
+								{#if cell.value !== null}
+									<span class="value">{cell.value}</span>
+								{:else if cell.notes.size > 0}
+									<div class="notes">
+										{#each Array(9) as unused, i (i)}
+											<span class="note" class:active={cell.notes.has(i + 1)}>
+												{cell.notes.has(i + 1) ? i + 1 : ''}
+											</span>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/each}
+			</div>
 
-		<div class="control-panel-container" style={isMobile && gridWidth ? `width: ${gridWidth}px` : ''}>
-			<ControlPanel on:check={handleCheckSolution} />
+			<div class="control-panel-container">
+				<ControlPanel on:check={handleCheckSolution} />
+			</div>
 		</div>
 	</div>
 
@@ -288,6 +281,11 @@
 		justify-content: center;
 		width: 100%;
 		max-width: 900px;
+	}
+
+	.game-board {
+		display: inline-flex;
+		flex-direction: column;
 	}
 
 	.control-panel-container {
@@ -418,7 +416,7 @@
 		.game-content {
 			flex-direction: column;
 			align-items: center;
-			gap: var(--space-4);
+			gap: var(--space-2);
 		}
 
 		.game-header {
@@ -427,7 +425,6 @@
 
 		.control-panel-container {
 			width: 100%;
-			max-width: 400px;
 		}
 
 		.cell {
