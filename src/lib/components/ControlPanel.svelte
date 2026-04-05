@@ -18,17 +18,12 @@
 
 	let solverToolsOpen = false;
 	let selectedNumber: number | null = null;
-	let longPressHintDismissed = false;
 	let longPressActiveBtn: number | null = null;
 	let longPressFiredBtn: number | null = null;
 
 	// Long press state
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 	const LONG_PRESS_MS = 500;
-
-	onMount(() => {
-		longPressHintDismissed = localStorage.getItem('sudoku-longpress-hint-dismissed') === 'true';
-	});
 
 	function handleNumberClick(num: number) {
 		selectedNumber = num;
@@ -39,12 +34,6 @@
 		longPressFiredBtn = num;
 		selectedNumber = num;
 		gameStore.toggleNote(num);
-
-		// Dismiss hint on first long press
-		if (!longPressHintDismissed) {
-			longPressHintDismissed = true;
-			localStorage.setItem('sudoku-longpress-hint-dismissed', 'true');
-		}
 	}
 
 	function onTouchStart(num: number, event: TouchEvent) {
@@ -97,34 +86,6 @@
 </script>
 
 <div class="control-panel" role="region" aria-label="Sudoku control panel">
-	<!-- Pen/Pencil Toggle -->
-	<div class="mode-toggle" role="radiogroup" aria-label="Mode selection">
-		<button
-			class:active={!$isPencilMode}
-			on:click={() => gameStore.setPencilMode(false)}
-			disabled={!$isGameStarted}
-			role="radio"
-			aria-checked={!$isPencilMode}
-			aria-label="Pen mode"
-			tabindex={!$isPencilMode ? 0 : -1}
-		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-			Pen
-		</button>
-		<button
-			class:active={$isPencilMode}
-			on:click={() => gameStore.setPencilMode(true)}
-			disabled={!$isGameStarted}
-			role="radio"
-			aria-checked={$isPencilMode}
-			aria-label="Pencil mode"
-			tabindex={$isPencilMode ? 0 : -1}
-		>
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-			Pencil
-		</button>
-	</div>
-
 	<!-- Number Pad: 3x3 grid -->
 	<div class="number-pad" role="group" aria-label="Number selection">
 		{#each Array(9) as unused, i (i)}
@@ -151,63 +112,62 @@
 		{/each}
 	</div>
 
-	<!-- Long press hint -->
-	{#if !longPressHintDismissed && $isGameStarted}
-		<div class="longpress-hint">
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-			Long press for notes
-		</div>
-	{/if}
-
-	<!-- Action Buttons -->
-	<div class="action-buttons">
-		<div class="action-row">
-			<button
-				class="action-btn"
-				on:click={() => gameStore.undo()}
-				disabled={!$canUndo}
-				title="Undo"
-				aria-label="Undo last action"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-				Undo
-			</button>
-			<button
-				class="action-btn"
-				on:click={() => gameStore.redo()}
-				disabled={!$canRedo}
-				title="Redo"
-				aria-label="Redo last undone action"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-				Redo
-			</button>
-			<button
-				class="action-btn"
-				on:click={() => gameStore.setCellValue(null)}
-				disabled={!$canDelete}
-				title="Delete"
-				aria-label="Delete current cell value"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
-				Delete
-			</button>
-		</div>
-
-		<div class="action-row">
-			<button
-				class="action-btn"
-				on:click={() => dispatch('restart')}
-				title="Restart Game"
-				aria-label="Restart the game"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-				Restart
-			</button>
-		</div>
+	<!-- Action Bar: single row with all actions -->
+	<div class="action-bar" role="toolbar" aria-label="Game actions">
+		<button
+			class="action-icon-btn"
+			on:click={() => gameStore.undo()}
+			disabled={!$canUndo}
+			title="Undo"
+			aria-label="Undo last action"
+		>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+			<span class="action-label">Undo</span>
+		</button>
+		<button
+			class="action-icon-btn"
+			on:click={() => gameStore.redo()}
+			disabled={!$canRedo}
+			title="Redo"
+			aria-label="Redo last undone action"
+		>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+			<span class="action-label">Redo</span>
+		</button>
+		<button
+			class="action-icon-btn"
+			on:click={() => gameStore.setCellValue(null)}
+			disabled={!$canDelete}
+			title="Delete"
+			aria-label="Delete current cell value"
+		>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+			<span class="action-label">Delete</span>
+		</button>
+		<button
+			class="action-icon-btn pencil-toggle"
+			class:pencil-active={$isPencilMode}
+			on:click={() => gameStore.togglePencilMode()}
+			disabled={!$isGameStarted}
+			title={$isPencilMode ? 'Switch to Pen mode' : 'Switch to Pencil mode'}
+			aria-label={$isPencilMode ? 'Pencil mode active, click to switch to Pen' : 'Pen mode active, click to switch to Pencil'}
+			aria-pressed={$isPencilMode}
+		>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+			<span class="action-label">Pencil</span>
+		</button>
+		<button
+			class="action-icon-btn"
+			on:click={() => dispatch('restart')}
+			title="Restart Game"
+			aria-label="Restart the game"
+		>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+			<span class="action-label">Restart</span>
+		</button>
 	</div>
 
-	<!-- Solver Tools (collapsible) -->
+	<!-- Solver Tools (collapsible, desktop only) -->
 	<div class="solver-tools">
 		<button class="solver-toggle" on:click={() => (solverToolsOpen = !solverToolsOpen)} aria-expanded={solverToolsOpen}>
 			<span class="toggle-icon">{solverToolsOpen ? '▾' : '▸'}</span>
@@ -267,7 +227,7 @@
 .control-panel {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-4);
+	gap: var(--space-3);
 	padding: var(--space-4);
 	box-sizing: border-box;
 	background: var(--surface-color);
@@ -276,53 +236,6 @@
 	width: 100%;
 	max-width: 450px;
 	margin: 0 auto;
-}
-
-/* Mode toggle */
-.mode-toggle {
-	display: flex;
-	gap: var(--space-2);
-}
-
-.mode-toggle button {
-	flex: 1;
-	padding: var(--space-2) var(--space-3);
-	border: 1.5px solid var(--border-color);
-	background: var(--surface-color);
-	cursor: pointer;
-	border-radius: var(--radius);
-	font-size: 14px;
-	font-weight: 500;
-	min-height: 44px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--space-2);
-	touch-action: manipulation;
-	-webkit-tap-highlight-color: transparent;
-	transition: all 0.15s ease;
-	color: var(--text-secondary);
-}
-
-.mode-toggle button.active {
-	background: var(--primary-color);
-	color: white;
-	border-color: var(--primary-color);
-}
-
-.mode-toggle button:not(.active):hover {
-	background: var(--surface-secondary);
-	border-color: var(--text-secondary);
-}
-
-.mode-toggle button:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
-	pointer-events: none;
-}
-
-.mode-toggle button:active:not(:disabled) {
-	transform: scale(0.97);
 }
 
 /* Number pad: always 3x3 */
@@ -335,7 +248,7 @@
 .num-btn {
 	padding: 0;
 	font-family: var(--font-grid);
-	font-size: 24px;
+	font-size: 28px;
 	font-weight: 500;
 	border: 1.5px solid var(--border-light);
 	background: var(--surface-secondary);
@@ -343,7 +256,7 @@
 	cursor: pointer;
 	border-radius: var(--radius);
 	aspect-ratio: 1;
-	min-height: 44px;
+	min-height: 60px;
 	min-width: 44px;
 	display: flex;
 	align-items: center;
@@ -400,81 +313,64 @@
 	100% { opacity: 0; transform: scale(0.8); }
 }
 
-/* Long press hint */
-.longpress-hint {
+/* Action bar: single row of icon buttons */
+.action-bar {
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--space-1);
-	font-size: 12px;
-	color: var(--text-secondary);
-	padding: var(--space-1) var(--space-2);
-	background: var(--surface-secondary);
-	border-radius: var(--radius);
-	animation: hint-fade-in 0.3s ease;
+	gap: var(--space-2);
 }
 
-@keyframes hint-fade-in {
-	from { opacity: 0; transform: translateY(-4px); }
-	to { opacity: 1; transform: translateY(0); }
-}
-
-/* Action buttons */
-.action-buttons {
+.action-icon-btn {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-2);
-}
-
-.action-row {
-	display: flex;
-	gap: var(--space-2);
-}
-
-.action-btn {
-	flex: 1;
-	padding: var(--space-2) var(--space-3);
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	padding: var(--space-2) var(--space-1);
 	border: 1.5px solid var(--border-color);
 	border-radius: var(--radius);
 	cursor: pointer;
-	font-weight: 500;
-	font-size: 14px;
-	color: var(--text-color);
 	background: var(--surface-color);
-	min-height: 44px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--space-2);
+	color: var(--text-secondary);
+	min-height: 48px;
 	touch-action: manipulation;
 	-webkit-tap-highlight-color: transparent;
-	transition: all 0.12s ease;
+	transition: all 0.15s ease;
 }
 
-.action-btn:hover:not(:disabled) {
+.action-icon-btn:hover:not(:disabled) {
 	background: var(--surface-secondary);
 	border-color: var(--text-secondary);
+	color: var(--text-color);
 }
 
-.action-btn:active:not(:disabled) {
-	transform: scale(0.97);
+.action-icon-btn:active:not(:disabled) {
+	transform: scale(0.95);
 }
 
-.action-btn:disabled {
+.action-icon-btn:disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
 	pointer-events: none;
 }
 
-/* Check button: green outline */
-.check-btn {
-	color: var(--success-color);
-	border-color: var(--success-color);
+.action-label {
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1;
 }
 
-.check-btn:hover:not(:disabled) {
-	background: var(--success-light);
-	border-color: var(--success-color);
+/* Pencil toggle active state */
+.pencil-toggle.pencil-active {
+	background: var(--primary-color);
+	color: white;
+	border-color: var(--primary-color);
+}
+
+.pencil-toggle.pencil-active:hover:not(:disabled) {
+	background: var(--primary-hover, #2563eb);
+	border-color: var(--primary-hover, #2563eb);
+	color: white;
 }
 
 /* Solver tools */
@@ -547,6 +443,17 @@
 	pointer-events: none;
 }
 
+/* Check button: green outline */
+.check-btn {
+	color: var(--success-color);
+	border-color: var(--success-color);
+}
+
+.check-btn:hover:not(:disabled) {
+	background: var(--success-light);
+	border-color: var(--success-color);
+}
+
 /* Completion */
 .completion-message {
 	text-align: center;
@@ -611,51 +518,38 @@
 		padding: var(--space-2);
 	}
 
-	.mode-toggle button {
-		min-height: 36px;
-		padding: var(--space-1) var(--space-2);
-		font-size: 13px;
-	}
-
-	/* Keep 3x3 on mobile */
+	/* Bigger number buttons on mobile */
 	.number-pad {
 		grid-template-columns: repeat(3, 1fr);
-		gap: var(--space-1);
+		gap: var(--space-2);
 	}
 
 	.num-btn {
 		aspect-ratio: auto;
+		min-height: 56px;
+		font-size: 24px;
+	}
+
+	.action-bar {
+		gap: var(--space-1);
+	}
+
+	.action-icon-btn {
 		min-height: 40px;
-		max-height: 52px;
-		font-size: 20px;
+		padding: var(--space-1) 0;
 	}
 
-	.action-buttons {
-		gap: var(--space-1);
+	.action-icon-btn svg {
+		width: 18px;
+		height: 18px;
 	}
 
-	.action-row {
-		gap: var(--space-1);
-	}
-
-	.action-btn {
-		min-height: 36px;
-		font-size: 12px;
-		padding: var(--space-1) var(--space-2);
-	}
-
-	.action-btn svg {
-		width: 14px;
-		height: 14px;
+	.action-label {
+		display: none;
 	}
 
 	.solver-tools {
 		display: none;
-	}
-
-	.longpress-hint {
-		padding: 2px var(--space-1);
-		font-size: 11px;
 	}
 }
 
@@ -666,13 +560,17 @@
 	}
 
 	.num-btn {
-		min-height: 36px;
-		font-size: 18px;
+		min-height: 48px;
+		font-size: 22px;
 	}
 
-	.action-btn {
-		min-height: 32px;
-		font-size: 11px;
+	.action-icon-btn {
+		min-height: 36px;
+	}
+
+	.action-icon-btn svg {
+		width: 16px;
+		height: 16px;
 	}
 }
 </style>
