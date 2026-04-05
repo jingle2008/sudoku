@@ -2,10 +2,12 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { hasSavedGame, type Difficulty } from '$lib/stores/gameStore';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import { hasSavedGame, clearSavedGame, type Difficulty } from '$lib/stores/gameStore';
 	import { formatTime } from '$lib/stores/timerStore';
 
 	let savedGame: { exists: boolean; difficulty?: Difficulty; elapsedTime?: number } = { exists: false };
+	let showNewGameConfirm = false;
 
 	onMount(() => {
 		savedGame = hasSavedGame();
@@ -13,6 +15,24 @@
 
 	function continueGame() {
 		goto('/puzzle/new?resume=true');
+	}
+
+	function handleNewGame() {
+		if (savedGame.exists) {
+			showNewGameConfirm = true;
+		} else {
+			goto('/difficulty');
+		}
+	}
+
+	function confirmNewGame() {
+		clearSavedGame();
+		showNewGameConfirm = false;
+		goto('/difficulty');
+	}
+
+	function cancelNewGame() {
+		showNewGameConfirm = false;
 	}
 </script>
 
@@ -34,11 +54,11 @@
 					{savedGame.difficulty} · {formatTime(savedGame.elapsedTime ?? 0)}
 				</span>
 			</button>
-			<button class="secondary-btn" on:click={() => goto('/difficulty')}>
+			<button class="secondary-btn" on:click={handleNewGame}>
 				New Game
 			</button>
 		{:else}
-			<button class="primary-btn" on:click={() => goto('/difficulty')}>
+			<button class="primary-btn" on:click={handleNewGame}>
 				New Game
 			</button>
 		{/if}
@@ -50,6 +70,16 @@
 		</button>
 	</div>
 </div>
+
+<ConfirmDialog
+	title="Start a new game?"
+	message="Your saved progress will be lost."
+	confirmText="Start New"
+	cancelText="Cancel"
+	isOpen={showNewGameConfirm}
+	onConfirm={confirmNewGame}
+	onCancel={cancelNewGame}
+/>
 
 <style>
 	.home-container {
