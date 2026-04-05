@@ -67,12 +67,11 @@
 <style>
 	.modal-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
+		inset: 0;
 		width: 100vw;
 		height: 100vh;
+		max-width: none;
+		max-height: none;
 		background: rgba(0, 0, 0, 0.4);
 		display: flex;
 		align-items: center;
@@ -82,6 +81,10 @@
 		padding: 0;
 		margin: 0;
 		overflow: hidden;
+	}
+
+	.modal-overlay::backdrop {
+		background: transparent;
 	}
 
 	.modal {
