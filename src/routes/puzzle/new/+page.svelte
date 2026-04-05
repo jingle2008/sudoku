@@ -235,8 +235,8 @@
 				<span class="timer-icon">⏱️</span>
 				<span class="timer-value">{$formattedTime}</span>
 			</div>
-			<button class="help-toggle" on:click={openHelp} title="Keyboard shortcuts (?)">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+			<button class="help-toggle" on:click={openHelp} title="Keyboard Shortcuts" aria-label="Keyboard Shortcuts">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/></svg>
 			</button>
 			<ThemeToggle />
 		</div>
@@ -816,6 +816,10 @@
 
 		.note {
 			font-size: 8px;
+		}
+
+		.help-toggle {
+			display: none;
 		}
 
 		.side-panels {
