@@ -84,7 +84,7 @@ html.dark {
   --grid-selected-bg: #1e3a5f;
   --grid-selected-border: #3b82f6;
   --grid-highlight-bg: #172554;
-  --grid-same-number-bg: #1e293b;
+  --grid-same-number-bg: rgba(99, 102, 241, 0.2);
   --grid-scope-bg: rgba(59, 130, 246, 0.08);
 }
 
