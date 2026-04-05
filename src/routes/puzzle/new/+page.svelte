@@ -194,6 +194,7 @@
 
 	function cancelRestart() {
 		showRestartConfirm = false;
+		resumeTimer();
 	}
 
 	function openHelp() {
@@ -215,6 +216,7 @@
 	function goToHome() {
 		if ($isGameStarted && !$isComplete) {
 			showLeaveConfirm = true;
+			pauseTimer();
 			return;
 		}
 		goto('/');
@@ -227,6 +229,7 @@
 
 	function cancelLeave() {
 		showLeaveConfirm = false;
+		resumeTimer();
 	}
 
 	// Trigger celebration when puzzle is completed
@@ -340,7 +343,7 @@
 			</div>
 
 			<div class="control-panel-container">
-				<ControlPanel on:restart={() => (showRestartConfirm = true)} />
+				<ControlPanel on:restart={() => { showRestartConfirm = true; pauseTimer(); }} />
 			</div>
 		</div>
 	</div>
