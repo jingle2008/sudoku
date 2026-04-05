@@ -18,6 +18,38 @@ import { statsStore } from './statsStore';
 import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
 import { snapshotState, restoreSnapshot, type HistoryState, type MoveLogEntry, initialHistoryState } from './historyStore';
 
+function updateHighlighting(grid: Cell[][], row: number, col: number): void {
+	for (let r = 0; r < GRID_SIZE; r++) {
+		for (let c = 0; c < GRID_SIZE; c++) {
+			grid[r][c].isHighlighted = false;
+			grid[r][c].isInScope = false;
+		}
+	}
+
+	const boxRowStart = Math.floor(row / BOX_SIZE) * BOX_SIZE;
+	const boxColStart = Math.floor(col / BOX_SIZE) * BOX_SIZE;
+	for (let r = 0; r < GRID_SIZE; r++) {
+		for (let c = 0; c < GRID_SIZE; c++) {
+			if (r === row || c === col ||
+				(r >= boxRowStart && r < boxRowStart + BOX_SIZE &&
+				 c >= boxColStart && c < boxColStart + BOX_SIZE)) {
+				grid[r][c].isInScope = true;
+			}
+		}
+	}
+
+	const selectedValue = grid[row][col].value;
+	if (selectedValue !== null) {
+		for (let r = 0; r < GRID_SIZE; r++) {
+			for (let c = 0; c < GRID_SIZE; c++) {
+				if (grid[r][c].value === selectedValue) {
+					grid[r][c].isHighlighted = true;
+				}
+			}
+		}
+	}
+}
+
 export type GameState = {
 	grid: Cell[][];
 	selectedCell: Coord;
@@ -361,41 +393,9 @@ function createGameStore() {
 
 				const newState = { ...state };
 				newState.grid[state.selectedCell.row][state.selectedCell.col].isSelected = false;
-
-				for (let r = 0; r < GRID_SIZE; r++) {
-					for (let c = 0; c < GRID_SIZE; c++) {
-						newState.grid[r][c].isHighlighted = false;
-						newState.grid[r][c].isInScope = false;
-					}
-				}
-
 				newState.selectedCell = new Coord(row, col);
 				newState.grid[row][col].isSelected = true;
-
-				// Highlight cells in the same row, column, and 3x3 box
-				const boxRowStart = Math.floor(row / BOX_SIZE) * BOX_SIZE;
-				const boxColStart = Math.floor(col / BOX_SIZE) * BOX_SIZE;
-				for (let r = 0; r < GRID_SIZE; r++) {
-					for (let c = 0; c < GRID_SIZE; c++) {
-						if (r === row || c === col ||
-							(r >= boxRowStart && r < boxRowStart + BOX_SIZE &&
-							 c >= boxColStart && c < boxColStart + BOX_SIZE)) {
-							newState.grid[r][c].isInScope = true;
-						}
-					}
-				}
-
-				// Same-number highlighting
-				const selectedValue = newState.grid[row][col].value;
-				if (selectedValue !== null) {
-					for (let r = 0; r < GRID_SIZE; r++) {
-						for (let c = 0; c < GRID_SIZE; c++) {
-							if (newState.grid[r][c].value === selectedValue) {
-								newState.grid[r][c].isHighlighted = true;
-							}
-						}
-					}
-				}
+				updateHighlighting(newState.grid, row, col);
 
 				return newState;
 			}),
@@ -577,6 +577,7 @@ function createGameStore() {
 				newState.grid[state.selectedCell.row][state.selectedCell.col].isSelected = false;
 				newState.selectedCell = new Coord(newRow, newCol);
 				newState.grid[newRow][newCol].isSelected = true;
+				updateHighlighting(newState.grid, newRow, newCol);
 				return newState;
 			}),
 
