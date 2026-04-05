@@ -73,6 +73,8 @@
 		max-width: none;
 		max-height: none;
 		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
 		display: flex;
 		align-items: center;
 		justify-content: center;

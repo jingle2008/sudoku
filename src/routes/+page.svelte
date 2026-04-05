@@ -8,6 +8,7 @@
 		<ThemeToggle />
 	</div>
 	<div class="title-container">
+		<img src="/favicon.svg" alt="Sudoku" class="app-icon" width="72" height="72" />
 		<h1>Sudoku</h1>
 		<p class="subtitle">Challenge your mind with our Sudoku puzzles</p>
 	</div>
@@ -41,6 +42,10 @@
 	.title-container {
 		text-align: center;
 		margin-bottom: var(--space-10);
+	}
+
+	.app-icon {
+		margin-bottom: var(--space-4);
 	}
 
 	h1 {
