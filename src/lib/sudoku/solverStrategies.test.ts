@@ -22,7 +22,7 @@ function createEmptyGrid(): Cell[][] {
 					notes: new Set<number>(),
 					isSelected: false,
 					isInitial: false,
-					isFlashing: false,
+					isFlashing: false, isInScope: false,
 					isHighlighted: false
 				}))
 		);
