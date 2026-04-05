@@ -27,6 +27,7 @@
 
 	let showCelebration = false;
 	let showRestartConfirm = false;
+	let showLeaveConfirm = false;
 	let showShortcuts = false;
 	let currentDifficulty = 'medium';
 
@@ -67,6 +68,12 @@
 		event.preventDefault();
 	}
 
+	function handleBeforeUnload(event: BeforeUnloadEvent) {
+		if ($isGameStarted && !$isComplete) {
+			event.preventDefault();
+		}
+	}
+
 	// Get difficulty from URL parameter
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
@@ -74,8 +81,10 @@
 		solveLogStore.clear();
 		gameStore.startGame(currentDifficulty as Difficulty);
 		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('beforeunload', handleBeforeUnload);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('beforeunload', handleBeforeUnload);
 			// Record abandoned game when navigating away
 			gameStore.recordAbandoned();
 			gameStore.resetGame();
@@ -109,7 +118,7 @@
 		}
 
 		// Don't handle other keyboard events when dialog/help is open or game is complete
-		if (showRestartConfirm || showShortcuts) return;
+		if (showRestartConfirm || showLeaveConfirm || showShortcuts) return;
 		if ($isComplete) return;
 
 		const isMod = event.ctrlKey || event.metaKey;
@@ -204,7 +213,20 @@
 	}
 
 	function goToHome() {
+		if ($isGameStarted && !$isComplete) {
+			showLeaveConfirm = true;
+			return;
+		}
 		goto('/');
+	}
+
+	function confirmLeave() {
+		showLeaveConfirm = false;
+		goto('/');
+	}
+
+	function cancelLeave() {
+		showLeaveConfirm = false;
 	}
 
 	// Trigger celebration when puzzle is completed
@@ -336,6 +358,16 @@
 		cancelText="Cancel"
 		onConfirm={confirmRestart}
 		onCancel={cancelRestart}
+	/>
+
+	<ConfirmDialog
+		isOpen={showLeaveConfirm}
+		title="Leave game?"
+		message="Your progress will be lost."
+		confirmText="Leave"
+		cancelText="Stay"
+		onConfirm={confirmLeave}
+		onCancel={cancelLeave}
 	/>
 
 	{#if showCelebration}
