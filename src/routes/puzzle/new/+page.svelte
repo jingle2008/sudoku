@@ -728,9 +728,8 @@
 		}
 
 		.control-panel-container {
-			width: calc(var(--cell-size) * 9);
-			max-width: calc(100vw - 1.5rem);
-			margin: 0 auto;
+			width: 100%;
+			max-width: none;
 		}
 
 		/* Size grid cells to fit viewport: leave room for header (~44px), numpad+controls (~280px), gaps */
@@ -770,7 +769,8 @@
 		}
 
 		.control-panel-container {
-			max-width: calc(100vw - 1rem);
+			width: 100%;
+			max-width: none;
 		}
 
 		.cell {
