@@ -31,7 +31,9 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		min-height: 100vh;
+		height: 100vh;
+		height: 100dvh;
+		overflow: auto;
 		padding: var(--space-8);
 		background: var(--background-color);
 	}
