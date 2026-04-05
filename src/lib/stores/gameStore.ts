@@ -15,8 +15,123 @@ import type { PuzzleWorkerRequest, PuzzleWorkerResponse } from '$lib/workers/puz
 import { solveLogStore } from './solveLogStore';
 import { statsStore } from './statsStore';
 
-import { startTimer, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
+import { startTimer, startTimerFromElapsed, stopTimer, formatTime, type TimerState, initialTimerState } from './timerStore';
 import { snapshotState, restoreSnapshot, type HistoryState, type MoveLogEntry, initialHistoryState } from './historyStore';
+
+const SAVE_KEY = 'sudoku-saved-game';
+
+type SerializedCell = {
+	value: number | null;
+	notes: number[];
+	isInitial: boolean;
+};
+
+type SerializedGameState = {
+	grid: SerializedCell[][];
+	selectedCell: { row: number; col: number };
+};
+
+type SavedGame = {
+	grid: SerializedCell[][];
+	selectedCell: { row: number; col: number };
+	difficulty: Difficulty;
+	elapsedTime: number;
+	isPencilMode: boolean;
+	undoStack: SerializedGameState[];
+	redoStack: SerializedGameState[];
+	moveLog: MoveLogEntry[];
+	redoMoveLog: MoveLogEntry[];
+	initialGrid: (number | null)[][];
+};
+
+function serializeCell(cell: Cell): SerializedCell {
+	return { value: cell.value, notes: [...cell.notes], isInitial: cell.isInitial };
+}
+
+function serializeGrid(grid: Cell[][]): SerializedCell[][] {
+	return grid.map(row => row.map(serializeCell));
+}
+
+function serializeGameState(state: { grid: Cell[][]; selectedCell: Coord }): SerializedGameState {
+	return {
+		grid: serializeGrid(state.grid),
+		selectedCell: { row: state.selectedCell.row, col: state.selectedCell.col }
+	};
+}
+
+function deserializeCell(data: SerializedCell): Cell {
+	return {
+		value: data.value,
+		notes: new Set(data.notes),
+		isInitial: data.isInitial,
+		isSelected: false,
+		isFlashing: false,
+		isHighlighted: false,
+		isInScope: false
+	};
+}
+
+function deserializeGrid(data: SerializedCell[][]): Cell[][] {
+	return data.map(row => row.map(deserializeCell));
+}
+
+function deserializeGameState(data: SerializedGameState): { grid: Cell[][]; selectedCell: Coord } {
+	return {
+		grid: deserializeGrid(data.grid),
+		selectedCell: new Coord(data.selectedCell.row, data.selectedCell.col)
+	};
+}
+
+export function saveGameToStorage(state: {
+	grid: Cell[][];
+	selectedCell: Coord;
+	difficulty: Difficulty;
+	elapsedTime: number;
+	isPencilMode: boolean;
+	undoStack: { grid: Cell[][]; selectedCell: Coord }[];
+	redoStack: { grid: Cell[][]; selectedCell: Coord }[];
+	moveLog: MoveLogEntry[];
+	redoMoveLog: MoveLogEntry[];
+	initialGrid: (number | null)[][];
+}): void {
+	const saved: SavedGame = {
+		grid: serializeGrid(state.grid),
+		selectedCell: { row: state.selectedCell.row, col: state.selectedCell.col },
+		difficulty: state.difficulty,
+		elapsedTime: state.elapsedTime,
+		isPencilMode: state.isPencilMode,
+		undoStack: state.undoStack.map(serializeGameState),
+		redoStack: state.redoStack.map(serializeGameState),
+		moveLog: state.moveLog,
+		redoMoveLog: state.redoMoveLog,
+		initialGrid: state.initialGrid
+	};
+	try {
+		localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+	} catch {
+		// Storage full or unavailable — silently ignore
+	}
+}
+
+export function clearSavedGame(): void {
+	try {
+		localStorage.removeItem(SAVE_KEY);
+	} catch {
+		// Ignore
+	}
+}
+
+export function hasSavedGame(): { exists: boolean; difficulty?: Difficulty; elapsedTime?: number } {
+	try {
+		const raw = localStorage.getItem(SAVE_KEY);
+		if (!raw) return { exists: false };
+		const saved: SavedGame = JSON.parse(raw);
+		if (!saved.grid || !saved.initialGrid || !saved.difficulty) return { exists: false };
+		return { exists: true, difficulty: saved.difficulty, elapsedTime: saved.elapsedTime };
+	} catch {
+		return { exists: false };
+	}
+}
 
 function updateHighlighting(grid: Cell[][], row: number, col: number): void {
 	for (let r = 0; r < GRID_SIZE; r++) {
@@ -117,6 +232,19 @@ function createGameStore() {
 		newState.grid[0][0].isSelected = true;
 		return newState;
 	});
+
+	// Auto-save wrapper: schedules a save after a state mutation
+	function autoSave() {
+		// Use a microtask so save happens after the update completes
+		queueMicrotask(() => {
+			const unsub = subscribe((state) => {
+				if (state.isGameStarted && !state.isComplete && !state.isAuthoring) {
+					saveGameToStorage(state);
+				}
+			});
+			unsub();
+		});
+	}
 
 	// Helper function to check for conflicts and get conflicting cells
 	function findConflictingCells<T extends { value: number | null } | number>(
@@ -244,6 +372,7 @@ function createGameStore() {
 		subscribe,
 
 		startGame: (difficulty: Difficulty = 'medium') => {
+			clearSavedGame();
 			// Stop any existing timer before starting a new game (prevents timer leak)
 			update((state) => {
 				stopTimer(state.timerInterval);
@@ -337,6 +466,7 @@ function createGameStore() {
 		},
 
 		restartGame: () => {
+			clearSavedGame();
 			update((state) => {
 				stopTimer(state.timerInterval);
 				return state;
@@ -400,7 +530,7 @@ function createGameStore() {
 				return newState;
 			}),
 
-		undo: () =>
+		undo: () => {
 			update((state) => {
 				if (state.isComplete) return state;
 				if (state.undoStack.length === 0) return state;
@@ -419,9 +549,11 @@ function createGameStore() {
 					moveLog: state.moveLog.slice(0, -1),
 					redoMoveLog: lastMove ? [...state.redoMoveLog, lastMove] : state.redoMoveLog
 				};
-			}),
+			});
+			autoSave();
+		},
 
-		redo: () =>
+		redo: () => {
 			update((state) => {
 				if (state.isComplete) return state;
 				if (state.redoStack.length === 0) return state;
@@ -440,7 +572,9 @@ function createGameStore() {
 					moveLog: redoMove ? [...state.moveLog, redoMove] : state.moveLog,
 					redoMoveLog: state.redoMoveLog.slice(0, -1)
 				};
-			}),
+			});
+			autoSave();
+		},
 
 		undoToStep: (stepIndex: number) =>
 			update((state) => {
@@ -476,7 +610,7 @@ function createGameStore() {
 				};
 			}),
 
-		setCellValue: (value: number | null) =>
+		setCellValue: (value: number | null) => {
 			update((state) => {
 				solveLogStore.clearSelection();
 				const { row, col } = state.selectedCell;
@@ -515,6 +649,7 @@ function createGameStore() {
 						);
 						if (!hasErrors) {
 							stopTimer(state.timerInterval);
+							clearSavedGame();
 							const prevStats = statsStore.getStats(state.difficulty);
 							const previousBestTime = prevStats.bestTime;
 							let isNewBestTime = statsStore.recordGame(state.difficulty, state.elapsedTime, true);
@@ -533,9 +668,11 @@ function createGameStore() {
 				}
 
 				return result;
-			}),
+			});
+			autoSave();
+		},
 
-		toggleNote: (value: number) =>
+		toggleNote: (value: number) => {
 			update((state) => {
 				solveLogStore.clearSelection();
 				const { row, col } = state.selectedCell;
@@ -556,7 +693,9 @@ function createGameStore() {
 					moveLog: [...state.moveLog, entry],
 					redoMoveLog: []
 				};
-			}),
+			});
+			autoSave();
+		},
 
 		moveSelection: (direction: 'up' | 'down' | 'left' | 'right') =>
 			update((state) => {
@@ -592,8 +731,9 @@ function createGameStore() {
 				let previousBestTime: number | null = null;
 
 				if (isComplete && !state.isComplete) {
-					// Stop timer
+					// Stop timer and clear saved game
 					stopTimer(state.timerInterval);
+					clearSavedGame();
 
 					// Get previous best before recording
 					const prevStats = statsStore.getStats(state.difficulty);
@@ -759,6 +899,69 @@ function createGameStore() {
 					flashTimeout: null
 				};
 			});
+		},
+
+		saveGame: () => {
+			update((state) => {
+				if (state.isGameStarted && !state.isComplete && !state.isAuthoring) {
+					saveGameToStorage(state);
+				}
+				return state;
+			});
+		},
+
+		resumeGame: () => {
+			try {
+				const raw = localStorage.getItem(SAVE_KEY);
+				if (!raw) return false;
+				const saved: SavedGame = JSON.parse(raw);
+
+				// Stop any existing timer
+				update((state) => {
+					stopTimer(state.timerInterval);
+					return { ...state, timerInterval: null };
+				});
+
+				const grid = deserializeGrid(saved.grid);
+				const selectedCell = new Coord(saved.selectedCell.row, saved.selectedCell.col);
+				grid[selectedCell.row][selectedCell.col].isSelected = true;
+				updateHighlighting(grid, selectedCell.row, selectedCell.col);
+
+				const timer = startTimerFromElapsed(saved.elapsedTime, update);
+
+				update((state) => ({
+					...state,
+					grid,
+					selectedCell,
+					difficulty: saved.difficulty,
+					elapsedTime: saved.elapsedTime,
+					isPencilMode: saved.isPencilMode,
+					undoStack: saved.undoStack.map(s => {
+						const d = deserializeGameState(s);
+						return { grid: d.grid, selectedCell: d.selectedCell } as GameState;
+					}),
+					redoStack: saved.redoStack.map(s => {
+						const d = deserializeGameState(s);
+						return { grid: d.grid, selectedCell: d.selectedCell } as GameState;
+					}),
+					moveLog: saved.moveLog,
+					redoMoveLog: saved.redoMoveLog,
+					initialGrid: saved.initialGrid,
+					isGameStarted: true,
+					isGenerating: false,
+					isComplete: false,
+					isNewBestTime: false,
+					previousBestTime: null,
+					startTime: timer.startTime,
+					timerInterval: timer.timerInterval,
+					flashTimeout: null
+				}));
+
+				clearSavedGame();
+				return true;
+			} catch {
+				return false;
+			}
 		}
 	};
 }

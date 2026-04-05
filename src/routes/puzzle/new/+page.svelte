@@ -70,6 +70,7 @@
 
 	function handleBeforeUnload(event: BeforeUnloadEvent) {
 		if ($isGameStarted && !$isComplete) {
+			gameStore.saveGame();
 			event.preventDefault();
 		}
 	}
@@ -77,16 +78,32 @@
 	// Get difficulty from URL parameter
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
-		currentDifficulty = urlParams.get('difficulty') || 'medium';
-		solveLogStore.clear();
-		gameStore.startGame(currentDifficulty as Difficulty);
+		const isResume = urlParams.get('resume') === 'true';
+		if (isResume) {
+			const resumed = gameStore.resumeGame();
+			if (resumed) {
+				// Update local difficulty display from restored state
+				const unsub = gameStore.subscribe((state) => {
+					currentDifficulty = state.difficulty;
+				});
+				unsub();
+			} else {
+				// No valid saved game, go back to home
+				goto('/');
+				return;
+			}
+		} else {
+			currentDifficulty = urlParams.get('difficulty') || 'medium';
+			solveLogStore.clear();
+			gameStore.startGame(currentDifficulty as Difficulty);
+		}
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('beforeunload', handleBeforeUnload);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 			window.removeEventListener('beforeunload', handleBeforeUnload);
-			// Record abandoned game when navigating away
-			gameStore.recordAbandoned();
+			// Save game when navigating away (if not complete)
+			gameStore.saveGame();
 			gameStore.resetGame();
 		};
 	});
@@ -367,7 +384,7 @@
 	<ConfirmDialog
 		isOpen={showLeaveConfirm}
 		title="Leave game?"
-		message="Your progress will be lost."
+		message="Your progress will be saved and you can continue later."
 		confirmText="Leave"
 		cancelText="Stay"
 		onConfirm={confirmLeave}

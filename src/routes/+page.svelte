@@ -1,6 +1,19 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { hasSavedGame, type Difficulty } from '$lib/stores/gameStore';
+	import { formatTime } from '$lib/stores/timerStore';
+
+	let savedGame: { exists: boolean; difficulty?: Difficulty; elapsedTime?: number } = { exists: false };
+
+	onMount(() => {
+		savedGame = hasSavedGame();
+	});
+
+	function continueGame() {
+		goto('/puzzle/new?resume=true');
+	}
 </script>
 
 <div class="home-container">
@@ -14,9 +27,21 @@
 	</div>
 
 	<div class="button-container">
-		<button class="primary-btn" on:click={() => goto('/difficulty')}>
-			New Game
-		</button>
+		{#if savedGame.exists}
+			<button class="primary-btn" on:click={continueGame}>
+				Continue Game
+				<span class="save-info">
+					{savedGame.difficulty} · {formatTime(savedGame.elapsedTime ?? 0)}
+				</span>
+			</button>
+			<button class="secondary-btn" on:click={() => goto('/difficulty')}>
+				New Game
+			</button>
+		{:else}
+			<button class="primary-btn" on:click={() => goto('/difficulty')}>
+				New Game
+			</button>
+		{/if}
 		<button class="secondary-btn" on:click={() => goto('/puzzle/edit')}>
 			Edit Puzzle
 		</button>
@@ -71,6 +96,7 @@
 
 	.primary-btn {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		padding: var(--space-4) var(--space-6);
@@ -92,6 +118,14 @@
 
 	.primary-btn:active {
 		transform: scale(0.98);
+	}
+
+	.save-info {
+		font-size: 0.8rem;
+		font-weight: 400;
+		opacity: 0.85;
+		text-transform: capitalize;
+		margin-top: 2px;
 	}
 
 	.secondary-btn {

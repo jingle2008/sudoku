@@ -59,6 +59,44 @@ export function startTimer(update: Writable<{ startTime: number | null; elapsedT
 }
 
 /**
+ * Resume a timer from a previously saved elapsed time.
+ * Returns { startTime, timerInterval } to merge into state.
+ */
+export function startTimerFromElapsed(savedElapsedTime: number, update: Writable<{ startTime: number | null; elapsedTime: number; timerInterval: number | null }>['update']): { startTime: number; timerInterval: number } {
+	const startTime = Date.now() - savedElapsedTime * 1000;
+	totalHiddenMs = 0;
+	hiddenAt = null;
+	manualPausedAt = null;
+
+	// Clean up previous visibility listener
+	if (visibilityHandler && typeof document !== 'undefined') {
+		document.removeEventListener('visibilitychange', visibilityHandler);
+	}
+
+	visibilityHandler = () => {
+		if (document.hidden) {
+			hiddenAt = Date.now();
+		} else if (hiddenAt !== null) {
+			totalHiddenMs += Date.now() - hiddenAt;
+			hiddenAt = null;
+		}
+	};
+
+	if (typeof document !== 'undefined') {
+		document.addEventListener('visibilitychange', visibilityHandler);
+	}
+
+	const timerInterval = setInterval(() => {
+		if (hiddenAt !== null || manualPausedAt !== null) return;
+		update((state) => ({
+			...state,
+			elapsedTime: Math.floor((Date.now() - startTime - totalHiddenMs) / 1000)
+		}));
+	}, 1000) as unknown as number;
+	return { startTime, timerInterval };
+}
+
+/**
  * Clear an existing timer interval.
  */
 export function stopTimer(timerInterval: number | null): void {
