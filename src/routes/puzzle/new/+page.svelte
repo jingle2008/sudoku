@@ -739,7 +739,7 @@
 		.game-board {
 			display: inline-flex;
 			flex-direction: column;
-			gap: 0;
+			gap: var(--space-2);
 		}
 
 		.control-panel-container {
