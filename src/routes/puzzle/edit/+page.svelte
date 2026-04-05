@@ -14,13 +14,22 @@
 
 	let showExitConfirm = false;
 	let showInvalidPuzzleDialog = false;
+	let gridWidth = 0;
+	let isMobile = false;
+
+	function checkMobile() {
+		isMobile = window.innerWidth <= 768;
+	}
 
 	onMount(() => {
 		// Initialize an empty grid for editing
 		gameStore.initializeEditingGrid();
+		checkMobile();
 		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('resize', checkMobile);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('resize', checkMobile);
 		};
 	});
 
@@ -124,7 +133,7 @@
 	</div>
 
 	<div class="game-content">
-		<div class="grid">
+		<div class="grid" bind:clientWidth={gridWidth}>
 			{#each $gameStore.grid as row, rowIndex (rowIndex)}
 				<div class="row">
 					{#each row as cell, colIndex (colIndex)}
@@ -162,7 +171,7 @@
 			{/each}
 		</div>
 
-		<div class="control-panel-container">
+		<div class="control-panel-container" style={isMobile && gridWidth ? `width: ${gridWidth}px` : ''}>
 			<ControlPanel on:check={handleCheckSolution} />
 		</div>
 	</div>

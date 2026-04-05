@@ -29,6 +29,12 @@
 	let showRestartConfirm = false;
 	let showShortcuts = false;
 	let currentDifficulty = 'medium';
+	let gridWidth = 0;
+	let isMobile = false;
+
+	function checkMobile() {
+		isMobile = window.innerWidth <= 768;
+	}
 
 	// Long press on grid cell to temporarily toggle pencil mode
 	let cellLongPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -73,9 +79,12 @@
 		currentDifficulty = urlParams.get('difficulty') || 'medium';
 		solveLogStore.clear();
 		gameStore.startGame(currentDifficulty as Difficulty);
+		checkMobile();
 		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('resize', checkMobile);
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('resize', checkMobile);
 			// Record abandoned game when navigating away
 			gameStore.recordAbandoned();
 			gameStore.resetGame();
@@ -255,7 +264,7 @@
 				<p>Generating puzzle...</p>
 			</div>
 		{/if}
-		<div class="grid" class:generating={$isGenerating} class:complete-glow={$isComplete}>
+		<div class="grid" class:generating={$isGenerating} class:complete-glow={$isComplete} bind:clientWidth={gridWidth}>
 			{#each $gameStore.grid as row, rowIndex (rowIndex)}
 				<div class="row">
 					{#each row as cell, colIndex (colIndex)}
@@ -299,7 +308,7 @@
 			{/each}
 		</div>
 
-		<div class="control-panel-container">
+		<div class="control-panel-container" style={isMobile && gridWidth ? `width: ${gridWidth}px` : ''}>
 			<ControlPanel on:restart={() => (showRestartConfirm = true)} />
 		</div>
 	</div>
