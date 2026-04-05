@@ -269,6 +269,7 @@
 	flex-direction: column;
 	gap: var(--space-4);
 	padding: var(--space-4);
+	box-sizing: border-box;
 	background: var(--surface-color);
 	border-radius: var(--radius);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
