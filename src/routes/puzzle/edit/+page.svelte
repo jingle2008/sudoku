@@ -138,6 +138,7 @@
 								class:border-top={rowIndex % 3 === 0 && rowIndex !== 0}
 								class:initial={cell.isInitial}
 								class:highlighted={cell.isHighlighted}
+								class:in-scope={cell.isInScope && !cell.isSelected && !cell.isHighlighted}
 								class:flashing={cell.isFlashing}
 								role="button"
 								tabindex="0"
@@ -339,6 +340,10 @@
 		background-color: var(--grid-selected-bg);
 		box-shadow: inset 0 0 0 2px var(--grid-selected-border);
 		z-index: 1;
+	}
+
+	.cell.in-scope {
+		background-color: var(--grid-scope-bg);
 	}
 
 	.cell.highlighted:not(.selected) {

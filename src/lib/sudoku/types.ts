@@ -7,6 +7,7 @@ export type Cell = {
 	notes: Set<number>;
 	isSelected: boolean;
 	isHighlighted: boolean;
+	isInScope: boolean;
 	isInitial: boolean;
 	isFlashing: boolean;
 };

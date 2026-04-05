@@ -34,6 +34,7 @@
   --grid-selected-border: #3b82f6;
   --grid-highlight-bg: #eff6ff;
   --grid-same-number-bg: #e0e7ff;
+  --grid-scope-bg: rgba(59, 130, 246, 0.05);
 
   /* Spacing base unit: 8px */
   --space-1: 4px;
@@ -84,6 +85,7 @@ html.dark {
   --grid-selected-border: #3b82f6;
   --grid-highlight-bg: #172554;
   --grid-same-number-bg: #1e293b;
+  --grid-scope-bg: rgba(59, 130, 246, 0.08);
 }
 
 html.dark .solve-highlight {

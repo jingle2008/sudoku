@@ -312,6 +312,7 @@
 								class:initial={cell.isInitial}
 								class:highlighted={cell.isHighlighted}
 								class:same-number={cell.isHighlighted && !cell.isSelected}
+								class:in-scope={cell.isInScope && !cell.isSelected && !cell.isHighlighted}
 								class:flashing={cell.isFlashing}
 								class:solve-highlight={isSolveHighlighted(rowIndex, colIndex, $highlightedCells)}
 								role="button"
@@ -571,6 +572,11 @@
 		background-color: var(--grid-same-number-bg);
 	}
 
+	/* Row/col/box scope highlight */
+	.cell.in-scope {
+		background-color: var(--grid-scope-bg);
+	}
+
 	/* Row/col/box highlight (when cell selected) */
 	.cell.highlighted:not(.selected):not(.same-number) {
 		background-color: var(--grid-highlight-bg);
@@ -622,6 +628,10 @@
 	}
 
 	.cell:hover {
+		background-color: var(--primary-lighter);
+	}
+
+	.cell.in-scope:hover {
 		background-color: var(--primary-lighter);
 	}
 
