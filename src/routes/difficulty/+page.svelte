@@ -21,10 +21,14 @@
 </script>
 
 <div class="difficulty-container">
-	<div class="theme-toggle-wrapper">
+	<div class="difficulty-header">
+		<a class="back-link" href="/">
+			<span>&#8592;</span>
+			<span>Home</span>
+		</a>
+		<h1>Select Difficulty</h1>
 		<ThemeToggle />
 	</div>
-	<h1>Select Difficulty</h1>
 
 	<div class="difficulty-grid">
 		{#each difficulties as difficulty (difficulty.value)}
@@ -37,11 +41,6 @@
 			</button>
 		{/each}
 	</div>
-
-	<button class="back-button" on:click={() => goto('/')}>
-		<span>&#8592;</span>
-		<span>Back to Home</span>
-	</button>
 </div>
 
 <style>
@@ -52,14 +51,42 @@
 		min-height: 100vh;
 		padding: var(--space-4);
 		background: var(--background-color);
-		justify-content: center;
+	}
+
+	.difficulty-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		max-width: 480px;
+		margin-bottom: var(--space-6);
+	}
+
+	.back-link {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-color);
+		text-decoration: none;
+		padding: var(--space-2) var(--space-4);
+		background: var(--surface-color);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius);
+		transition: all 0.15s ease;
+	}
+
+	.back-link:hover {
+		background: var(--surface-secondary);
+		border-color: var(--text-secondary);
 	}
 
 	h1 {
 		font-size: 1.75rem;
 		font-weight: 700;
 		color: var(--text-color);
-		margin-bottom: var(--space-6);
+		margin: 0;
 		text-align: center;
 	}
 
@@ -114,36 +141,6 @@
 		font-weight: 500;
 	}
 
-	.back-button {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
-		padding: var(--space-2) var(--space-4);
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--text-color);
-		background: var(--surface-color);
-		border: 1px solid var(--border-color);
-		border-radius: var(--radius);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.back-button:hover {
-		background: var(--surface-secondary);
-		border-color: var(--text-secondary);
-	}
-
-	.back-button:active {
-		transform: scale(0.98);
-	}
-
-	.theme-toggle-wrapper {
-		position: absolute;
-		top: var(--space-4);
-		right: var(--space-4);
-	}
 
 	@media (max-width: 768px) {
 		.difficulty-container {
