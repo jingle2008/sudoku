@@ -23,7 +23,7 @@
 		canRedo,
 		type Difficulty
 	} from '$lib/stores/gameStore';
-	import { formatTime } from '$lib/stores/timerStore';
+	import { formatTime, pauseTimer, resumeTimer } from '$lib/stores/timerStore';
 
 	let showCelebration = false;
 	let showRestartConfirm = false;
@@ -98,8 +98,18 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
-		// Don't handle keyboard events when dialog is open or game is complete
-		if (showRestartConfirm) return;
+		// Help modal toggle — works regardless of game state
+		if (event.key === '?') {
+			if (showShortcuts) closeHelp(); else openHelp();
+			return;
+		}
+		if (event.key === 'Escape' && showShortcuts) {
+			closeHelp();
+			return;
+		}
+
+		// Don't handle other keyboard events when dialog/help is open or game is complete
+		if (showRestartConfirm || showShortcuts) return;
 		if ($isComplete) return;
 
 		const isMod = event.ctrlKey || event.metaKey;
@@ -115,12 +125,6 @@
 		if (isMod && event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
 			event.preventDefault();
 			if ($canRedo) gameStore.redo();
-			return;
-		}
-
-		// Toggle shortcut help
-		if (event.key === '?') {
-			showShortcuts = !showShortcuts;
 			return;
 		}
 
@@ -183,6 +187,22 @@
 		showRestartConfirm = false;
 	}
 
+	function openHelp() {
+		showShortcuts = true;
+		pauseTimer();
+	}
+
+	function closeHelp() {
+		showShortcuts = false;
+		resumeTimer();
+	}
+
+	function handleBackdropClick(event: MouseEvent) {
+		if (event.target === event.currentTarget) {
+			closeHelp();
+		}
+	}
+
 	function goToHome() {
 		goto('/');
 	}
@@ -215,30 +235,33 @@
 				<span class="timer-icon">⏱️</span>
 				<span class="timer-value">{$formattedTime}</span>
 			</div>
+			<button class="help-toggle" on:click={openHelp} title="Keyboard shortcuts (?)">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+			</button>
 			<ThemeToggle />
 		</div>
 	</div>
 
-	<button class="shortcuts-toggle" on:click={() => (showShortcuts = !showShortcuts)} title="Keyboard shortcuts (?)">
-		?
-	</button>
-
 	{#if showShortcuts}
-		<div class="shortcuts-panel" role="dialog" aria-label="Keyboard shortcuts">
-			<div class="shortcuts-header">
-				<strong>Keyboard Shortcuts</strong>
-				<button class="shortcuts-close" on:click={() => (showShortcuts = false)}>&times;</button>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<div class="help-backdrop" role="dialog" aria-label="Keyboard shortcuts" on:click={handleBackdropClick}>
+			<div class="help-modal">
+				<div class="help-modal-header">
+					<strong>Keyboard Shortcuts</strong>
+					<button class="help-modal-close" on:click={closeHelp}>&times;</button>
+				</div>
+				<dl class="shortcuts-list">
+					<div><dt>1-9</dt><dd>Set cell value / toggle note</dd></div>
+					<div><dt>Arrow keys</dt><dd>Navigate cells</dd></div>
+					<div><dt>N / P</dt><dd>Toggle pencil mode</dd></div>
+					<div><dt>Delete / Backspace</dt><dd>Clear cell</dd></div>
+					<div><dt>Ctrl+Z</dt><dd>Undo</dd></div>
+					<div><dt>Ctrl+Shift+Z</dt><dd>Redo</dd></div>
+					<div><dt>H/J/K/L</dt><dd>Vim-style navigation</dd></div>
+					<div><dt>?</dt><dd>Toggle this help</dd></div>
+				</dl>
+				<p class="help-hint">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</p>
 			</div>
-			<dl class="shortcuts-list">
-				<div><dt>1-9</dt><dd>Set cell value / toggle note</dd></div>
-				<div><dt>Arrow keys</dt><dd>Navigate cells</dd></div>
-				<div><dt>N / P</dt><dd>Toggle pencil mode</dd></div>
-				<div><dt>Delete / Backspace</dt><dd>Clear cell</dd></div>
-				<div><dt>Ctrl+Z</dt><dd>Undo</dd></div>
-				<div><dt>Ctrl+Shift+Z</dt><dd>Redo</dd></div>
-				<div><dt>H/J/K/L</dt><dd>Vim-style navigation</dd></div>
-				<div><dt>?</dt><dd>Toggle this help</dd></div>
-			</dl>
 		</div>
 	{/if}
 
@@ -626,63 +649,84 @@
 		to { transform: rotate(360deg); }
 	}
 
-	/* Keyboard shortcuts */
-	.shortcuts-toggle {
-		position: fixed;
-		bottom: var(--space-4);
-		right: var(--space-4);
-		width: 36px;
-		height: 36px;
-		border-radius: 50%;
-		border: 1px solid var(--border-color);
-		background: var(--surface-color);
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: var(--text-color);
-		cursor: pointer;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		z-index: 10;
+	/* Help button in header */
+	.help-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 36px;
+		height: 36px;
+		padding: 0;
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius);
+		background: var(--surface-color);
+		color: var(--text-color);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
 	}
 
-	.shortcuts-toggle:hover {
+	.help-toggle:hover {
 		background: var(--surface-secondary);
+		border-color: var(--text-secondary);
 	}
 
-	.shortcuts-panel {
+	.help-toggle:active {
+		transform: scale(0.95);
+	}
+
+	/* Help modal backdrop */
+	.help-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}
+
+	.help-modal {
 		background: var(--surface-color);
 		border: 1px solid var(--border-color);
 		border-radius: var(--radius);
-		padding: var(--space-3) var(--space-4);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+		padding: var(--space-4) var(--space-5);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 		width: 100%;
-		max-width: 340px;
-		font-size: 13px;
+		max-width: 380px;
+		margin: var(--space-4);
+		font-size: 14px;
 	}
 
-	.shortcuts-header {
+	.help-modal-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: var(--space-2);
+		margin-bottom: var(--space-3);
+		font-size: 16px;
 	}
 
-	.shortcuts-close {
+	.help-modal-close {
 		background: none;
 		border: none;
-		font-size: 1.2rem;
+		font-size: 1.4rem;
 		cursor: pointer;
 		color: var(--text-secondary);
 		padding: 0 var(--space-1);
+		line-height: 1;
+	}
+
+	.help-modal-close:hover {
+		color: var(--text-color);
 	}
 
 	.shortcuts-list {
 		margin: 0;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-1);
+		gap: var(--space-2);
 	}
 
 	.shortcuts-list div {
@@ -692,15 +736,32 @@
 
 	.shortcuts-list dt {
 		font-weight: 600;
-		min-width: 120px;
+		min-width: 130px;
 		color: var(--text-color);
 		font-family: var(--font-grid);
-		font-size: 12px;
+		font-size: 13px;
 	}
 
 	.shortcuts-list dd {
 		margin: 0;
 		color: var(--text-secondary);
+	}
+
+	.help-hint {
+		margin: var(--space-3) 0 0;
+		text-align: center;
+		font-size: 12px;
+		color: var(--text-secondary);
+	}
+
+	.help-hint kbd {
+		display: inline-block;
+		padding: 1px 6px;
+		font-family: var(--font-grid);
+		font-size: 11px;
+		background: var(--surface-secondary);
+		border: 1px solid var(--border-color);
+		border-radius: 4px;
 	}
 
 	/* Mobile */
@@ -758,10 +819,6 @@
 		}
 
 		.side-panels {
-			display: none;
-		}
-
-		.shortcuts-toggle {
 			display: none;
 		}
 	}

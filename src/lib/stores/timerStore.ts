@@ -17,6 +17,9 @@ let hiddenAt: number | null = null;
 let totalHiddenMs = 0;
 let visibilityHandler: (() => void) | null = null;
 
+// Manual pause state (e.g. help modal open)
+let manualPausedAt: number | null = null;
+
 /**
  * Start a new timer, updating elapsedTime every second via store.update.
  * Returns { startTime, timerInterval } to merge into state.
@@ -25,6 +28,7 @@ export function startTimer(update: Writable<{ startTime: number | null; elapsedT
 	const startTime = Date.now();
 	totalHiddenMs = 0;
 	hiddenAt = null;
+	manualPausedAt = null;
 
 	// Clean up previous visibility listener
 	if (visibilityHandler && typeof document !== 'undefined') {
@@ -45,7 +49,7 @@ export function startTimer(update: Writable<{ startTime: number | null; elapsedT
 	}
 
 	const timerInterval = setInterval(() => {
-		if (hiddenAt !== null) return; // Don't update while hidden
+		if (hiddenAt !== null || manualPausedAt !== null) return; // Don't update while hidden or paused
 		update((state) => ({
 			...state,
 			elapsedTime: Math.floor((Date.now() - startTime - totalHiddenMs) / 1000)
@@ -66,6 +70,25 @@ export function stopTimer(timerInterval: number | null): void {
 		visibilityHandler = null;
 	}
 	hiddenAt = null;
+}
+
+/**
+ * Pause the timer manually (e.g. when help modal is open).
+ */
+export function pauseTimer(): void {
+	if (manualPausedAt === null) {
+		manualPausedAt = Date.now();
+	}
+}
+
+/**
+ * Resume the timer after a manual pause.
+ */
+export function resumeTimer(): void {
+	if (manualPausedAt !== null) {
+		totalHiddenMs += Date.now() - manualPausedAt;
+		manualPausedAt = null;
+	}
 }
 
 /**
