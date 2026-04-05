@@ -284,8 +284,10 @@
 	}
 
 	.game-board {
-		display: inline-flex;
-		flex-direction: column;
+		display: flex;
+		flex-direction: row;
+		gap: var(--space-8);
+		align-items: flex-start;
 	}
 
 	.control-panel-container {
@@ -417,6 +419,12 @@
 			flex-direction: column;
 			align-items: center;
 			gap: var(--space-2);
+		}
+
+		.game-board {
+			display: inline-flex;
+			flex-direction: column;
+			gap: 0;
 		}
 
 		.game-header {
