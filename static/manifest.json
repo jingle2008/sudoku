@@ -4,7 +4,7 @@
 	"description": "A feature-rich Sudoku puzzle game",
 	"start_url": "/",
 	"display": "standalone",
-	"theme_color": "#3498db",
+	"theme_color": "#3b82f6",
 	"background_color": "#ffffff",
 	"icons": [
 		{
