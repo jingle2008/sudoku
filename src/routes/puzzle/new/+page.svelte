@@ -719,6 +719,7 @@
 		}
 
 		.game-content {
+			--cell-size: min(calc((100vw - 1.5rem) / 9), calc((100dvh - 340px) / 9));
 			flex-direction: column;
 			align-items: center;
 			gap: var(--space-2);
@@ -727,13 +728,13 @@
 		}
 
 		.control-panel-container {
-			width: 100%;
-			max-width: 400px;
+			width: calc(var(--cell-size) * 9);
+			max-width: calc(100vw - 1.5rem);
+			margin: 0 auto;
 		}
 
 		/* Size grid cells to fit viewport: leave room for header (~44px), numpad+controls (~280px), gaps */
 		.cell {
-			--cell-size: min(calc((100vw - 1.5rem) / 9), calc((100dvh - 340px) / 9));
 			width: var(--cell-size);
 			height: var(--cell-size);
 			min-width: 28px;
@@ -764,8 +765,15 @@
 			padding-bottom: env(safe-area-inset-bottom, 4px);
 		}
 
-		.cell {
+		.game-content {
 			--cell-size: min(calc((100vw - 1rem) / 9), calc((100dvh - 320px) / 9));
+		}
+
+		.control-panel-container {
+			max-width: calc(100vw - 1rem);
+		}
+
+		.cell {
 			width: var(--cell-size);
 			height: var(--cell-size);
 			font-size: clamp(12px, var(--cell-size), 16px);
