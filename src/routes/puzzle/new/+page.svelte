@@ -197,9 +197,6 @@
 		goto('/difficulty');
 	}
 
-	function goToStats() {
-		goto('/stats');
-	}
 </script>
 
 <div class="game-container">
@@ -208,9 +205,6 @@
 			<button class="back-button" on:click={goToHome}>
 				<span class="icon">←</span>
 				<span class="text">Home</span>
-			</button>
-			<button class="back-button" on:click={goToStats}>
-				<span class="text">Stats</span>
 			</button>
 		</div>
 		<div class="difficulty-badge">

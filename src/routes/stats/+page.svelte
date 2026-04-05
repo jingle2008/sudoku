@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { statsStore } from '$lib/stores/statsStore';
 	import { formatTime } from '$lib/stores/timerStore';
@@ -46,11 +45,14 @@
 </script>
 
 <div class="stats-container">
-	<div class="theme-toggle-wrapper">
+	<div class="stats-header">
+		<a class="back-link" href="/">
+			<span>&#8592;</span>
+			<span>Home</span>
+		</a>
+		<h1>Statistics</h1>
 		<ThemeToggle />
 	</div>
-
-	<h1>Statistics</h1>
 
 	<div class="summary-cards">
 		<div class="summary-card">
@@ -108,10 +110,6 @@
 		{/each}
 	</div>
 
-	<button class="back-button" on:click={() => goto('/')}>
-		<span>&#8592;</span>
-		<span>Back to Home</span>
-	</button>
 </div>
 
 <style>
@@ -129,7 +127,6 @@
 		font-weight: 700;
 		color: var(--text-color);
 		margin-bottom: var(--space-6);
-		margin-top: var(--space-8);
 		text-align: center;
 	}
 
@@ -236,36 +233,38 @@
 		color: var(--text-secondary);
 	}
 
-	/* Back button */
-	.back-button {
+	/* Header */
+	.stats-header {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		justify-content: space-between;
+		width: 100%;
+		max-width: 560px;
+		margin-bottom: var(--space-4);
+	}
+
+	.stats-header h1 {
+		margin: 0;
+	}
+
+	.back-link {
+		display: flex;
+		align-items: center;
 		gap: var(--space-2);
-		padding: var(--space-2) var(--space-4);
 		font-size: 14px;
 		font-weight: 500;
 		color: var(--text-color);
+		text-decoration: none;
+		padding: var(--space-2) var(--space-4);
 		background: var(--surface-color);
 		border: 1px solid var(--border-color);
 		border-radius: var(--radius);
-		cursor: pointer;
 		transition: all 0.15s ease;
 	}
 
-	.back-button:hover {
+	.back-link:hover {
 		background: var(--surface-secondary);
 		border-color: var(--text-secondary);
-	}
-
-	.back-button:active {
-		transform: scale(0.98);
-	}
-
-	.theme-toggle-wrapper {
-		position: absolute;
-		top: var(--space-4);
-		right: var(--space-4);
 	}
 
 	@media (max-width: 768px) {
