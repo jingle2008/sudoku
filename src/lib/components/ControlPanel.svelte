@@ -10,13 +10,25 @@
 		isComplete,
 		isNewBestTime,
 		previousBestTime,
-		elapsedTime
+		elapsedTime,
+		selectedCell,
+		grid
 	} from '$lib/stores/gameStore';
 	import { formatTime } from '$lib/stores/timerStore';
 
 	const dispatch = createEventDispatcher<{ restart: void }>();
 
 	let solverToolsOpen = false;
+	// Derive the active number from the selected cell on the board
+	$: activeNumber = (() => {
+		const cell = $selectedCell;
+		const g = $grid;
+		if (cell && g && g[cell.row] && g[cell.row][cell.col]) {
+			return g[cell.row][cell.col].value;
+		}
+		return null;
+	})();
+
 	let selectedNumber: number | null = null;
 	let longPressActiveBtn: number | null = null;
 	let longPressFiredBtn: number | null = null;
@@ -24,6 +36,11 @@
 	// Long press state
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 	const LONG_PRESS_MS = 500;
+
+	// Clear selectedNumber when the board cell changes (user clicked a cell)
+	$: if ($selectedCell) {
+		selectedNumber = null;
+	}
 
 	function handleNumberClick(num: number) {
 		selectedNumber = num;
@@ -91,7 +108,7 @@
 		{#each Array(9) as unused, i (i)}
 			<button
 				class="num-btn"
-				class:num-selected={selectedNumber === i + 1}
+				class:num-selected={selectedNumber === i + 1 || activeNumber === i + 1}
 				class:long-press-active={longPressActiveBtn === i + 1}
 				class:long-press-fired={longPressFiredBtn === i + 1}
 				on:click={() => handleNumberClick(i + 1)}
@@ -267,15 +284,24 @@
 	position: relative;
 }
 
-.num-btn:hover:not(:disabled) {
+.num-btn:hover:not(:disabled):not(.num-selected) {
 	background: var(--border-light);
 	border-color: var(--border-color);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .num-btn.num-selected {
-	background: var(--primary-color);
-	color: white;
-	border-color: var(--primary-color);
+	background: #3b82f6;
+	color: #ffffff;
+	border-color: #2563eb;
+	box-shadow: 0 2px 8px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	font-weight: 700;
+}
+
+.num-btn.num-selected:hover:not(:disabled) {
+	background: #2563eb;
+	color: #ffffff;
+	border-color: #1d4ed8;
 }
 
 .num-btn:active:not(:disabled) {
